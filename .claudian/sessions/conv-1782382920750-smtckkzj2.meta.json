@@ -1,0 +1,23 @@
+{
+  "id": "conv-1782382920750-smtckkzj2",
+  "providerId": "claude",
+  "title": "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"Bash\">\n<...",
+  "titleGenerationStatus": "success",
+  "createdAt": 1782382920750,
+  "updatedAt": 1782384288308,
+  "lastResponseAt": 1782384134200,
+  "sessionId": "e46df7eb-383c-4d93-8572-4b962bda0de3",
+  "providerState": {
+    "providerSessionId": "e46df7eb-383c-4d93-8572-4b962bda0de3"
+  },
+  "usage": {
+    "model": "haiku",
+    "inputTokens": 70,
+    "cacheCreationInputTokens": 0,
+    "cacheReadInputTokens": 145664,
+    "contextWindow": 200000,
+    "contextTokens": 145734,
+    "percentage": 73,
+    "contextWindowIsAuthoritative": true
+  }
+}

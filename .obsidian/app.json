@@ -1,0 +1,21 @@
+{
+  "focusNewTab": true,
+  "defaultViewMode": "source",
+  "strictLineBreaks": false,
+  "livePreview": true,
+  "readableLineLength": true,
+  "showIndentGuide": true,
+  "showLineNumber": false,
+  "tabSize": 4,
+  "vimMode": false,
+  "openBehavior": "",
+  "newFileLocation": "root",
+  "attachmentFolderPath": "/",
+  "newLinkFormat": "absolute",
+  "alwaysUpdateLinks": true,
+  "showUnsupportedFiles": false,
+  "deleteUnlinkedAttachments": "ask",
+  "trashOption": "none",
+  "showInlineTitle": true,
+  "promptDelete": false
+}

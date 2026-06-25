@@ -1,0 +1,13 @@
+{
+  "accentColor": "",
+  "theme": "moonstone",
+  "cssTheme": "",
+  "showViewHeader": true,
+  "showRibbon": true,
+  "interfaceFontFamily": "MiSans",
+  "baseFontSize": 16,
+  "nativeMenus": true,
+  "enabledCssSnippets": [
+    "notion-homepage"
+  ]
+}

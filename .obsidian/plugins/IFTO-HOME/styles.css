@@ -1,0 +1,732 @@
+/* IFTO-HOME — INFOTOOLS Dashboard for Obsidian */
+
+.ifto-settings-root {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 960px !important;
+  margin: 0 auto !important;
+  padding: 24px clamp(24px, 5vw, 48px) !important;
+}
+
+.ifto-container {
+  /* New design tokens (widget refresh — Timespot / Crypto / Dribbble mix) */
+  --ifto-card-bg: #ffffff;
+  --ifto-text:    #111111;
+  --ifto-text-2:  #6b7280;
+  --ifto-text-3:  #9ca3af;
+  --ifto-divider: #e5e7eb;
+  --ifto-accent:  #000000;
+  --ifto-accent-text: #ffffff;
+
+  --ifto-fs-hero: 56px;
+  --ifto-fs-xl:   32px;
+  --ifto-fs-lg:   18px;
+  --ifto-fs-base: 14px;
+  --ifto-fs-sm:   12px;
+
+  --ifto-card-pad: 24px;
+  --ifto-card-gap: 16px;
+
+  --ifto-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
+  --ifto-shadow-strong: 0 4px 16px rgba(0,0,0,.10);
+
+  /* Legacy tokens (kept for non-widget classes like header / nav) */
+  --ifto-gray-1: #333333;
+  --ifto-gray-4: #bdbdbd;
+  --ifto-gray-5: #e0e0e0;
+  --ifto-gray-6: #f2f2f2;
+  --ifto-bg: #ffffff;
+  --ifto-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ifto-section-x: 127px;
+}
+
+.theme-light .ifto-container,
+body.theme-light .ifto-container {
+  --ifto-card-bg: #ffffff;
+  --ifto-text:    #111111;
+  --ifto-text-2:  #6b7280;
+  --ifto-text-3:  #9ca3af;
+  --ifto-divider: #e5e7eb;
+  --ifto-accent:  #000000;
+  --ifto-accent-text: #ffffff;
+  --ifto-gray-1: #333333;
+  --ifto-gray-4: #bdbdbd;
+  --ifto-gray-5: #e0e0e0;
+  --ifto-gray-6: #f2f2f2;
+  --ifto-bg: #ffffff;
+}
+
+.theme-dark .ifto-container,
+body.theme-dark .ifto-container {
+  --ifto-card-bg: #1c1c1c;
+  --ifto-text:    #f5f5f5;
+  --ifto-text-2:  #9ca3af;
+  --ifto-text-3:  #6b7280;
+  --ifto-divider: #2a2a2a;
+  --ifto-accent:  #ffffff;
+  --ifto-accent-text: #000000;
+
+  --ifto-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.4);
+  --ifto-shadow-strong: 0 4px 16px rgba(0,0,0,.5);
+
+  --ifto-gray-1: #e0e0e0;
+  --ifto-gray-4: #666666;
+  --ifto-gray-5: #444444;
+  --ifto-gray-6: #2a2a2a;
+  --ifto-bg: #1e1e1e;
+}
+
+.ifto-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  background: var(--ifto-bg);
+  font-family: var(--ifto-font);
+  color: var(--ifto-gray-1);
+  min-height: 100vh;
+}
+
+/* ====== Header ====== */
+.ifto-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--ifto-bg);
+  border-bottom: 1px solid var(--ifto-gray-6);
+}
+
+.ifto-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 102px;
+  padding: 0 clamp(20px, 6vw, 130px);
+}
+
+.ifto-nav-items {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1.2vw, 20px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ifto-logo {
+  flex-shrink: 0;
+}
+
+.ifto-nav-item {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ifto-gray-1);
+  text-decoration: none;
+  padding: 4px 0;
+  position: relative;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ifto-nav-item:hover { opacity: 0.7; }
+
+.ifto-nav-item.active::after {
+  content: ''; position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  height: 1px; background: var(--ifto-gray-1);
+}
+
+.ifto-nav-item.active::before {
+  content: ''; position: absolute;
+  top: -2px; left: 0; right: 0;
+  height: 1px; background: var(--ifto-gray-1);
+}
+
+/* ====== Section ====== */
+.ifto-section {
+  padding: 0 var(--ifto-section-x);
+  margin-bottom: 60px;
+  position: relative;
+}
+
+.ifto-section-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  margin: 0 0 20px 0;
+  color: var(--ifto-gray-1);
+}
+
+/* ====== Hero ====== */
+.ifto-hero {
+  display: flex;
+  gap: 40px;
+  min-height: 600px;
+  position: relative;
+  padding-top: 70px;
+  margin-bottom: 80px;
+}
+
+.ifto-hero-bg {
+  position: absolute;
+  left: 0;
+  top: 200px;
+  font-size: 80px;
+  color: var(--ifto-gray-4);
+  opacity: 0.3;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.ifto-hero-content {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  padding-top: 200px;
+}
+
+.ifto-hero-title {
+  font-size: 24px;
+  letter-spacing: 4.8px;
+  color: var(--ifto-gray-1);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.ifto-hero-subtitle {
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.ifto-hero-brand {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--ifto-gray-1);
+  margin: 8px 0 0 0;
+}
+
+/* Shortcuts */
+.ifto-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, 115px);
+  gap: 24px;
+  margin: 30px 0;
+}
+
+.ifto-shortcut-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 115px;
+  height: 53px;
+  border: none;
+  border-radius: 8px;
+  background: var(--ifto-gray-6);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--ifto-font);
+}
+
+.ifto-shortcut-btn:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.ifto-shortcut-icon { font-size: 18px; font-weight: 300; line-height: 1; }
+.ifto-shortcut-label { font-size: 12px; color: var(--ifto-gray-1); letter-spacing: 1px; }
+
+/* Hero Nav */
+.ifto-hero-nav {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.ifto-hero-nav-btn {
+  width: 53px; height: 53px;
+  border: 1px solid var(--ifto-gray-5);
+  border-radius: 8px;
+  background: var(--ifto-bg);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--ifto-gray-1);
+}
+
+.ifto-hero-nav-btn:hover { background: var(--ifto-gray-6); }
+
+/* Widget Card */
+.ifto-widget-card {
+  width: 350px;
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--ifto-bg);
+  border: 1px solid var(--ifto-gray-6);
+}
+
+.ifto-widget-title { font-size: 16px; font-weight: 600; margin: 0 0 10px 0; }
+.ifto-widget-desc { font-size: 13px; color: var(--ifto-gray-4); line-height: 1.6; }
+
+/* Hero Image */
+.ifto-hero-image {
+  flex: 1;
+  min-height: 400px;
+  background: var(--ifto-gray-5);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 17px;
+  position: relative;
+}
+
+/* ====== Tabs ====== */
+.ifto-section-tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ifto-tab {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--ifto-gray-4);
+  cursor: pointer;
+  padding: 4px 0;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.ifto-tab.active { color: var(--ifto-gray-1); }
+
+.ifto-tab.active::after {
+  content: ''; position: absolute;
+  bottom: -3px; left: 0; right: 0;
+  height: 1px; background: var(--ifto-gray-1);
+}
+
+.ifto-back-home {
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--ifto-gray-1);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ifto-back-home:hover { opacity: 0.7; }
+
+/* ====== Card Grid ====== */
+.ifto-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  background: var(--ifto-gray-6);
+  border-radius: 10px;
+  padding: 24px;
+  min-height: 395px;
+}
+
+.ifto-card {
+  width: 200px; height: 100px;
+  background: var(--ifto-bg);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.ifto-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-color: var(--ifto-gray-5); }
+
+.ifto-card-title { font-size: 12px; font-weight: 500; }
+.ifto-card-date { font-size: 11px; color: var(--ifto-gray-4); }
+
+.ifto-card-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: transparent;
+  border: 1px dashed var(--ifto-gray-5);
+  cursor: pointer;
+}
+
+.ifto-card-add:hover { filter: brightness(0.95); }
+.ifto-card-add-icon { font-size: 24px; font-weight: 300; color: var(--ifto-gray-4); }
+.ifto-card-add-text { font-size: 12px; color: var(--ifto-gray-4); }
+
+/* ====== Slide Nav ====== */
+.ifto-slide-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.ifto-slide-btn {
+  width: 53px; height: 53px;
+  border: 1px solid var(--ifto-gray-5);
+  border-radius: 8px;
+  background: var(--ifto-bg);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--ifto-gray-1);
+}
+
+.ifto-slide-btn:hover { background: var(--ifto-gray-6); }
+
+.ifto-slide-numbers {
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--ifto-gray-1);
+}
+
+/* ====== TODO ====== */
+.ifto-todo-layout {
+  display: flex;
+  gap: 40px;
+  min-height: 520px;
+}
+
+.ifto-todo-panel { flex: 1; }
+
+.ifto-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--ifto-card-bg);
+  border: 1px solid var(--ifto-divider);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--ifto-shadow);
+}
+
+.ifto-todo-item {
+  width: 100%; height: 70px;
+  background: var(--ifto-gray-6);
+  border: 1px solid var(--ifto-divider);
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  align-items: flex-start;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ifto-todo-item:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+
+.ifto-todo-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--ifto-gray-4);
+  border: 1px dashed var(--ifto-gray-5);
+  background: transparent;
+}
+
+.ifto-activity-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--ifto-card-bg);
+  border: 1px solid var(--ifto-divider);
+  border-radius: 12px;
+  padding: 20px;
+  align-content: flex-start;
+  box-shadow: var(--ifto-shadow);
+}
+
+.ifto-card-sm {
+  width: 160px; height: 100px;
+  background: var(--ifto-gray-6);
+  border: 1px solid var(--ifto-divider);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ifto-card-sm:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+
+.ifto-todo-hint {
+  font-size: 11px;
+  color: var(--ifto-gray-4);
+  text-align: right;
+  margin: 8px 0;
+}
+
+/* ====== Project ====== */
+.ifto-project-columns {
+  display: flex;
+  gap: 20px;
+}
+
+.ifto-project-col {
+  flex: 1;
+  background: var(--ifto-gray-6);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 395px;
+}
+
+.ifto-project-card { width: 100%; height: 70px; }
+
+/* ====== Project Column View Toggle (推进中 <-> 草稿箱) ====== */
+.project-col-title-toggle {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.project-col-title-toggle .project-view-active {
+  color: var(--g1);
+  font-weight: 600;
+}
+.project-col-title-toggle .project-view-sep {
+  color: var(--g4);
+  font-weight: 300;
+  user-select: none;
+}
+.project-col-title-toggle .project-view-toggle {
+  color: var(--g4);
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 0.92em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  user-select: none;
+}
+.project-col-title-toggle .project-view-toggle:hover {
+  color: var(--g1);
+  background: rgba(127,127,127,0.08);
+}
+.project-col-title-toggle .project-view-toggle.drag-over {
+  color: #fff;
+  background: rgba(52, 152, 219, 0.85);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.4);
+}
+
+/* ====== Notes ====== */
+.ifto-note-layout {
+  display: flex;
+  gap: 14px;
+}
+
+.ifto-note-sidebar {
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ifto-note-item {
+  height: 90px;
+  background: var(--ifto-gray-6);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.ifto-note-thumb {
+  width: 60px; height: 66px;
+  background: var(--ifto-gray-4);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.ifto-note-main { flex: 1; }
+
+.ifto-note-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: var(--ifto-gray-6);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.ifto-note-card {
+  width: 200px; height: 130px;
+  background: var(--ifto-bg);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ifto-note-card-thumb {
+  width: 60px; height: 110px;
+  background: var(--ifto-gray-4);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* ====== Inline Rename Input ====== */
+.todo-inline-edit {
+  background: var(--ifto-bg);
+  color: var(--ifto-gray-1);
+  border: 1px solid var(--ifto-gray-5);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: inherit;
+  font-family: var(--ifto-font);
+  width: calc(100% - 16px);
+  outline: none;
+  box-sizing: border-box;
+  z-index: 10;
+  position: relative;
+  caret-color: var(--ifto-gray-1);
+}
+
+/* ====== Footer ====== */
+.ifto-footer {
+  margin-top: 80px;
+  background: var(--ifto-gray-6);
+  padding: 40px var(--ifto-section-x);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.ifto-footer-copy {
+  font-size: 12px;
+  color: var(--ifto-gray-4);
+  letter-spacing: 1px;
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 1200px) {
+  .ifto-hero { min-height: clamp(450px, 55vw, 700px); }
+  .ifto-hero-content { padding-top: 120px; }
+  .ifto-shortcuts { gap: 16px; }
+}
+
+@media (max-width: 900px) {
+  .ifto-section { --ifto-section-x: 20px; }
+  .ifto-nav { flex-wrap: wrap; padding: 0 clamp(12px, 3vw, 20px); height: auto; min-height: 60px; gap: 8px; }
+  .ifto-nav-items { gap: 8px; }
+  .ifto-hero { flex-direction: column; min-height: auto; }
+  .ifto-hero-content { padding-top: 60px; }
+  .ifto-hero-image { min-height: 250px; }
+  .ifto-shortcuts { grid-template-columns: repeat(2, 115px); }
+  .ifto-todo-layout { flex-direction: column; }
+  .ifto-project-columns { flex-direction: column; }
+  .ifto-note-layout { flex-direction: column; }
+  .ifto-note-sidebar { width: 100%; }
+  .ifto-card { width: 160px; }
+}
+
+@media (max-width: 480px) {
+  .ifto-nav { flex-wrap: wrap; justify-content: center; min-height: auto; padding: 8px 12px; }
+  .ifto-nav-items { flex: 0 0 100%; justify-content: center; flex-wrap: wrap; }
+  .ifto-hero-image { min-height: 160px; }
+  .ifto-shortcuts { grid-template-columns: repeat(2, 1fr); }
+  .ifto-card { width: 100%; }
+}
+
+/* =============================================================
+   Border-radius override (controlled by plugin setting)
+   Sliders value 0-16 maps to px, set via --ifto-radius CSS var
+   on documentElement by __IFTO_applyRadius bridge.
+   !important needed to beat inline border-radius styles in home.js
+   ============================================================= */
+.ifto-shortcut-btn,
+.ifto-hero-nav-btn,
+.ifto-widget-card,
+.ifto-hero-image,
+.ifto-card-grid,
+.ifto-card,
+.ifto-slide-btn,
+.ifto-todo-list,
+.ifto-todo-item,
+.ifto-activity-grid,
+.ifto-card-sm,
+.ifto-project-col,
+.ifto-note-item,
+.ifto-note-thumb,
+.ifto-note-grid,
+.ifto-note-card,
+.ifto-note-card-thumb,
+.todo-inline-edit,
+.btn-s,
+.btn-arrow,
+.widget-card,
+.token-card,
+.token-status,
+.token-refresh,
+.token-recharge,
+.token-error-icon,
+.token-setup-btn,
+.token-model-item,
+.token-bar-container,
+.token-bar-fill,
+.cal-day,
+.cal-day.today,
+.side-box,
+.side-row,
+.card,
+.card-tag,
+.todo-list,
+.todo-item,
+.activity-grid,
+.card-sm,
+.project-col,
+.project-card,
+.project-folder,
+.btn-project-new,
+.project-folder-count,
+.project-file-item,
+.note-item,
+.note-thumb,
+.note-grid,
+.note-card,
+.note-card-thumb,
+.inbox-list-item .ili-action,
+.slide-btn,
+.card-grid,
+.inbox-list,
+.side-folder-item,
+.side-drop-area,
+.project-folder-card,
+.note-sidebar,
+.wn-card,
+.paper-search-input,
+.hero-right,
+.hero-img-label {
+  border-radius: var(--ifto-radius, 8px) !important;
+}
