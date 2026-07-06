@@ -1,6 +1,8 @@
 {
-  "deepseekApiKey": "DeepSeek API Key",
-  "minimaxApiKey": "API Key",
+
+  "deepseekApiKey": "your_access_key",
+  "minimaxApiKey": "your_access_key",
+
   "collectionTemplate": "900-数据库/910-模板Templates/INBOX专用",
   "readingTemplate": "900-数据库/910-模板Templates/paper-template rating",
   "notePath": "000-信箱 INBOX/040-笔记",
