@@ -67,7 +67,7 @@ var DEFAULT_SETTINGS = {
   ollamaUrl: "http://localhost:11434",
   ragflowUrl: "http://localhost:9380",
   minimaxApiUrl: "https://www.minimaxi.com/v1/token_plan/remains",
-  widgetOrder: "calendar,deepseek,minimax,habits,ollama,ragflow,weeknotes,todotoday",
+  widgetOrder: "deepseek,minimax,calendar,habits,ollama,ragflow,weeknotes,todotoday",
   widgetDeepseekEnabled: true,
   widgetCalendarEnabled: true,
   widgetHabitsEnabled: true,
@@ -76,6 +76,9 @@ var DEFAULT_SETTINGS = {
   widgetWeeknotesEnabled: true,
   widgetTodotodayEnabled: true,
   widgetMinimaxEnabled: true,
+  widgetWeeknotesPath: '',
+  widgetTodotodoPath: '',
+  domainFolder: '300-领域AREA',
   zoom: 1,
   bgColor: '',
   borderRadius: 8,
@@ -128,6 +131,7 @@ var IFTOView = class extends import_obsidian.ItemView {
         taskFolder: this.plugin.settings.taskFolder,
         projectBase: this.plugin.settings.projectBase,
         projectCols: this.plugin.settings.projectCols,
+        archivePath: this.plugin.settings.archivePath,
         bookFolder: this.plugin.settings.bookFolder,
         paperFolder: this.plugin.settings.paperFolder,
         resourceRoot: this.plugin.settings.resourceRoot,
@@ -150,9 +154,12 @@ var IFTOView = class extends import_obsidian.ItemView {
         widgetRagflowEnabled: this.plugin.settings.widgetRagflowEnabled,
         widgetWeeknotesEnabled: this.plugin.settings.widgetWeeknotesEnabled,
         widgetTodotodayEnabled: this.plugin.settings.widgetTodotodayEnabled,
+        widgetWeeknotesPath: this.plugin.settings.widgetWeeknotesPath,
+        widgetTodotodoPath: this.plugin.settings.widgetTodotodoPath,
         zoom: this.plugin.settings.zoom,
         bgColor: this.plugin.settings.bgColor,
         borderRadius: this.plugin.settings.borderRadius,
+        domainFolder: this.plugin.settings.domainFolder,
       };
       const pluginDir = this.app.vault.configDir + "/plugins/IFTO-HOME";
       const htmlContent = await this.app.vault.adapter.read(pluginDir + "/home.html");
@@ -165,6 +172,40 @@ var IFTOView = class extends import_obsidian.ItemView {
       scriptEl.id = "ifto-home-script";
       scriptEl.textContent = jsContent;
       this.containerEl.__createNote = () => this.createCollectionNote();
+      window.__IFTO_forceInputFocus = (target) => {
+        const focusTarget = () => {
+          try {
+            if (target && document.body.contains(target)) {
+              target.focus({ preventScroll: true });
+              if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+                const len = target.value.length;
+                try {
+                  target.setSelectionRange(0, len);
+                } catch (_) {
+                  target.select();
+                }
+              }
+              return;
+            }
+            this.containerEl.focus({ preventScroll: true });
+          } catch (_) {
+          }
+        };
+        try {
+          this.app.workspace.setActiveLeaf(this.leaf, false, true);
+        } catch (_) {
+        }
+        try {
+          this.containerEl.setAttribute("tabindex", "-1");
+          this.containerEl.focus({ preventScroll: true });
+        } catch (_) {
+        }
+        focusTarget();
+        requestAnimationFrame(() => focusTarget());
+        setTimeout(focusTarget, 30);
+        setTimeout(focusTarget, 100);
+        setTimeout(focusTarget, 250);
+      };
       window.__IFTO_listFiles = async (folder) => {
         try {
           if (!await this.app.vault.adapter.exists(folder)) return [];
@@ -205,19 +246,13 @@ var IFTOView = class extends import_obsidian.ItemView {
             // Switching apps and back works because the blur/focus cycle forces
             // the editor to take focus. We replicate that with a delayed focus().
             setTimeout(() => {
-              let retries = 0;
-              const maxRetries = 10;
-              const fn = () => {
-                try {
-                  const view = leaf.view;
-                  if (view && view.editor && typeof view.editor.focus === "function") {
-                    view.editor.focus();
-                  }
-                } catch (e) { /* ignore */ }
-                if (++retries < maxRetries) setTimeout(fn, 250);
-              };
-              fn();
-            }, 100);
+              try {
+                const view = leaf.view;
+                if (view && view.editor && typeof view.editor.focus === "function") {
+                  view.editor.focus();
+                }
+              } catch (e) { /* ignore */ }
+            }, 60);
           }
         } catch (e) {
           console.error("IFTO: open file error", e);
@@ -759,20 +794,120 @@ var IFTOView = class extends import_obsidian.ItemView {
           return await recList(folder, folder);
         } catch (e) { console.error('IFTO: getFilesFrontmatterRecursive error', e); return []; }
       };
+      window.__IFTO_getDomainTree = async (folder) => {
+        var stripPrefix = function(n) { return n.replace(/^\d+-/, ''); };
+        var buildTree = async (dir) => {
+          try {
+            var adapter = this.app.vault.adapter;
+            var result = await adapter.list(dir);
+            var files = [];
+            var totalTasks = 0, completedTasks = 0;
+            for (var _i = 0; _i < (result.files || []).length; _i++) {
+              var f = result.files[_i];
+              if (!f.endsWith('.md')) continue;
+              var fname = f.split('/').pop() || '';
+              if (fname === '_INDEX-300-领域.md') continue;
+              var content = await adapter.read(f);
+              var fm = {};
+              var m = content.match(/^---\n([\s\S]*?)\n---/);
+              if (m) {
+                m[1].split('\n').forEach(function(line) {
+                  var kv = line.match(/^\s*([^:]+?)\s*:\s*(.+)/);
+                  if (kv) fm[kv[1].trim()] = kv[2].trim().replace(/^['"]|['"]$/g, '');
+                });
+              }
+              var taskMatches = content.match(/- \[( |x)\]/g);
+              var total = taskMatches ? taskMatches.length : 0;
+              var done = taskMatches ? taskMatches.filter(function(t) { return t === '- [x]'; }).length : 0;
+              totalTasks += total;
+              completedTasks += done;
+              files.push({
+                name: fname, path: f,
+                title: fm['title'] || fname.replace('.md', ''),
+                description: fm['description'] || '',
+                tags: fm['tags'] || '',
+                totalTasks: total, completedTasks: done,
+              });
+            }
+            var subfolders = [];
+            for (var _j = 0; _j < (result.folders || []).length; _j++) {
+              var sub = result.folders[_j];
+              var subInfo = await buildTree(sub);
+              if (subInfo) {
+                totalTasks += subInfo.totalTasks;
+                completedTasks += subInfo.completedTasks;
+                subfolders.push(subInfo);
+              }
+            }
+            var dirName = dir.split('/').pop() || '';
+            return {
+              name: stripPrefix(dirName), path: dir,
+              files: files, subfolders: subfolders,
+              fileCount: files.length,
+              totalTasks: totalTasks, completedTasks: completedTasks,
+            };
+          } catch (e) { return null; }
+        };
+        try {
+          if (!await this.app.vault.adapter.exists(folder)) return [];
+          var result = await this.app.vault.adapter.list(folder);
+          var branches = [];
+          for (var _k = 0; _k < (result.folders || []).length; _k++) {
+            var sub = result.folders[_k];
+            var info = await buildTree(sub);
+            if (info) branches.push(info);
+          }
+          return branches;
+        } catch (e) { console.error('IFTO: getDomainTree error', e); return []; }
+      };
       window.__IFTO_refreshSettings = () => {
         window.__IFTO_SETTINGS = Object.assign({}, window.__IFTO_SETTINGS, {
+          heroImageUrl: this.plugin.settings.heroImageUrl,
+          heroImageFolder: this.plugin.settings.heroImageFolder,
+          deepseekKey: this.plugin.settings.deepseekApiKey,
+          minimaxKey: this.plugin.settings.minimaxApiKey,
+          minimaxApiUrl: this.plugin.settings.minimaxApiUrl,
+          widgetMinimaxEnabled: this.plugin.settings.widgetMinimaxEnabled,
+          readingTemplate: this.plugin.settings.readingTemplate,
+          collectionTemplate: this.plugin.settings.collectionTemplate,
+          notePath: this.plugin.settings.notePath,
+          noteTemplate: this.plugin.settings.noteTemplate,
+          reviewDailyPath: this.plugin.settings.reviewDailyPath,
+          reviewWeeklyPath: this.plugin.settings.reviewWeeklyPath,
+          reviewMonthlyPath: this.plugin.settings.reviewMonthlyPath,
+          reviewProjectPath: this.plugin.settings.reviewProjectPath,
+          reviewDailyTemplate: this.plugin.settings.reviewDailyTemplate,
+          reviewWeeklyTemplate: this.plugin.settings.reviewWeeklyTemplate,
+          reviewMonthlyTemplate: this.plugin.settings.reviewMonthlyTemplate,
+          reviewProjectTemplate: this.plugin.settings.reviewProjectTemplate,
+          inboxFolder: this.plugin.settings.inboxFolder,
+          quickLearnFolder: this.plugin.settings.quickLearnFolder,
+          todoFolder: this.plugin.settings.todoFolder,
+          activityFolder: this.plugin.settings.activityFolder,
+          taskFolder: this.plugin.settings.taskFolder,
+          projectBase: this.plugin.settings.projectBase,
+          projectCols: this.plugin.settings.projectCols,
+          archivePath: this.plugin.settings.archivePath,
+          bookFolder: this.plugin.settings.bookFolder,
+          paperFolder: this.plugin.settings.paperFolder,
+          resourceRoot: this.plugin.settings.resourceRoot,
+          projectTaskTemplate: this.plugin.settings.projectTaskTemplate,
+          ollamaUrl: this.plugin.settings.ollamaUrl,
+          ragflowUrl: this.plugin.settings.ragflowUrl,
           widgetOrder: this.plugin.settings.widgetOrder,
           widgetDeepseekEnabled: this.plugin.settings.widgetDeepseekEnabled,
           widgetCalendarEnabled: this.plugin.settings.widgetCalendarEnabled,
           widgetHabitsEnabled: this.plugin.settings.widgetHabitsEnabled,
           widgetOllamaEnabled: this.plugin.settings.widgetOllamaEnabled,
           widgetRagflowEnabled: this.plugin.settings.widgetRagflowEnabled,
-        widgetWeeknotesEnabled: this.plugin.settings.widgetWeeknotesEnabled,
-        widgetTodotodayEnabled: this.plugin.settings.widgetTodotodayEnabled,
-        widgetMinimaxEnabled: this.plugin.settings.widgetMinimaxEnabled,
-          deepseekKey: this.plugin.settings.deepseekApiKey,
-          minimaxKey: this.plugin.settings.minimaxApiKey,
+          widgetWeeknotesEnabled: this.plugin.settings.widgetWeeknotesEnabled,
+          widgetTodotodayEnabled: this.plugin.settings.widgetTodotodayEnabled,
+          widgetWeeknotesPath: this.plugin.settings.widgetWeeknotesPath,
+          widgetTodotodoPath: this.plugin.settings.widgetTodotodoPath,
+          zoom: this.plugin.settings.zoom,
+          bgColor: this.plugin.settings.bgColor,
           borderRadius: this.plugin.settings.borderRadius,
+          domainFolder: this.plugin.settings.domainFolder,
         });
       };
       window.__IFTO_updateFileFrontmatter = async (filePath, key, value) => {
@@ -1020,25 +1155,7 @@ var IFTOView = class extends import_obsidian.ItemView {
       if (!exists) await this.app.vault.createFolder(folder);
       const file = await this.app.vault.create(fullPath, content);
       new import_obsidian.Notice(`\u5DF2\u521B\u5EFA: ${fileName}`);
-      // Open in new tab with explicit editor focus
-      const leaf = this.app.workspace.getLeaf(true);
-      await leaf.openFile(file);
-      this.app.workspace.setActiveLeaf(leaf, false, true);
-      // Delayed focus — the editor's contenteditable may not be fully rendered yet
-      setTimeout(() => {
-        let retries = 0;
-        const maxRetries = 10;
-        const fn = () => {
-          try {
-            const view = leaf.view;
-            if (view && view.editor && typeof view.editor.focus === "function") {
-              view.editor.focus();
-            }
-          } catch (e) { /* ignore */ }
-          if (++retries < maxRetries) setTimeout(fn, 250);
-        };
-        fn();
-      }, 100);
+      await this.app.workspace.getLeaf(true).openFile(file);
     } catch (e) {
       new import_obsidian.Notice(`\u521B\u5EFA\u5931\u8D25: ${e.message}`);
     }
@@ -1131,6 +1248,14 @@ var IFTOPlugin = class extends import_obsidian.Plugin {
   }
   async saveSettings() {
     await this.saveData(this.settings);
+    // Re-publish settings to the running home.js view so getter-based path
+    // accessors (TODO_FOLDER, ACTIVITY_FOLDER, getInboxFolder(), …) pick up
+    // changes without needing the user to restart Obsidian.
+    try {
+      if (typeof window.__IFTO_refreshSettings === 'function') {
+        window.__IFTO_refreshSettings();
+      }
+    } catch (e) { /* view not open yet — fine */ }
   }
   async activateView() {
     const { workspace } = this.app;
@@ -1169,6 +1294,11 @@ var IFTOSettingsTab = class extends import_obsidian.PluginSettingTab {
     }));
     new import_obsidian.Setting(settingsRoot).setName("\u9996\u9875\u5355\u5F20\u56FE\u7247 URL\uFF08\u5907\u9009\uFF09").setDesc("\u5F53\u4E0A\u65B9\u6587\u4EF6\u5939\u65E0\u56FE\u7247\u6216\u672A\u8BBE\u7F6E\u65F6\uFF0C\u4F7F\u7528\u6B64\u5355\u5F20\u56FE\u7247 URL\u3002\u82E5\u4E8C\u8005\u5747\u672A\u8BBE\u7F6E\u5219\u663E\u793A\u9ED8\u8BA4\u80CC\u666F").addText((text) => text.setPlaceholder("https://example.com/hero.jpg").setValue(this.plugin.settings.heroImageUrl).onChange(async (value) => {
       this.plugin.settings.heroImageUrl = value.trim();
+      await this.plugin.saveSettings();
+    }));
+
+    new import_obsidian.Setting(settingsRoot).setName("领域文件夹路径").setDesc("点击首页「领域」按钮时加载的领域技能树文件夹路径").addText((text) => text.setPlaceholder("300-领域AREA").setValue(this.plugin.settings.domainFolder).onChange(async (value) => {
+      this.plugin.settings.domainFolder = value.trim();
       await this.plugin.saveSettings();
     }));
 
@@ -1334,6 +1464,17 @@ var IFTOSettingsTab = class extends import_obsidian.PluginSettingTab {
       }
     });
 
+new import_obsidian.Setting(settingsRoot).setName('本周笔记路径').setDesc('小组件-本周笔记 读取的文件夹路径，留空则使用笔记功能路径').addText((text) => text.setPlaceholder('000-信箱INBOX/040-笔记').setValue(this.plugin.settings.widgetWeeknotesPath).onChange(async (value) => {
+      this.plugin.settings.widgetWeeknotesPath = value.trim();
+      await this.plugin.saveSettings();
+      if (typeof (window).__IFTO_refreshWidgetDisplay === 'function') (window).__IFTO_refreshWidgetDisplay();
+    }));
+    new import_obsidian.Setting(settingsRoot).setName('今日待办路径').setDesc('小组件-今日待办 读取的文件夹路径，留空则使用今日待办功能路径').addText((text) => text.setPlaceholder('000-信箱INBOX/031-今日待办').setValue(this.plugin.settings.widgetTodotodoPath).onChange(async (value) => {
+      this.plugin.settings.widgetTodotodoPath = value.trim();
+      await this.plugin.saveSettings();
+      if (typeof (window).__IFTO_refreshWidgetDisplay === 'function') (window).__IFTO_refreshWidgetDisplay();
+    }));
+
     // ====== INBOX 收集 ======
     settingsRoot.createEl("h3", { text: "INBOX 收集" });
     new import_obsidian.Setting(settingsRoot).setName("新建收集模板").setDesc("新建收集文件时使用的模板文件路径（如 Templates/收集模板.md），留空则创建空白文件").addText((text) => text.setPlaceholder("Templates/收集模板.md").setValue(this.plugin.settings.collectionTemplate).onChange(async (value) => {
@@ -1372,6 +1513,10 @@ var IFTOSettingsTab = class extends import_obsidian.PluginSettingTab {
     }));
     new import_obsidian.Setting(settingsRoot).setName("项目管理基础路径").setDesc("项目管理看板读取的父文件夹路径").addText((text) => text.setPlaceholder("100-工作台WORKDESK/120-项目管理").setValue(this.plugin.settings.projectBase).onChange(async (value) => {
       this.plugin.settings.projectBase = value.trim();
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(settingsRoot).setName("项目归档路径").setDesc("归档项目文件存放的文件夹路径").addText((text) => text.setPlaceholder("500-归档资料/510-归档项目").setValue(this.plugin.settings.archivePath).onChange(async (value) => {
+      this.plugin.settings.archivePath = value.trim();
       await this.plugin.saveSettings();
     }));
 

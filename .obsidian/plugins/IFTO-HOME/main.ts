@@ -25,9 +25,11 @@ interface IFTOPluginSettings {
   taskFolder: string;
   projectBase: string;
   projectCols: string;
+  archivePath: string;
   bookFolder: string;
   paperFolder: string;
   resourceRoot: string;
+  domainFolder: string;
   projectTaskTemplate: string;
   ollamaUrl: string;
   ragflowUrl: string;
@@ -40,6 +42,8 @@ interface IFTOPluginSettings {
   widgetWeeknotesEnabled: boolean;
   widgetTodotodayEnabled: boolean;
   widgetMinimaxEnabled: boolean;
+  widgetWeeknotesPath: string;
+  widgetTodotodoPath: string;
   minimaxApiUrl: string;
   zoom: number;
   bgColor: string;
@@ -70,14 +74,16 @@ const DEFAULT_SETTINGS: IFTOPluginSettings = {
   taskFolder: '100-工作台WORKDESK/120-项目管理/121-未开始',
   projectBase: '100-工作台WORKDESK/120-项目管理',
   projectCols: '121-未开始,122-推进中,123-已完成',
+  archivePath: '500-归档资料/510-归档项目',
   bookFolder: '400-资源RESOURCE/420-览阅/421-书籍',
   paperFolder: '400-资源RESOURCE/420-览阅/422-论文',
   resourceRoot: '400-资源RESOURCE',
+  domainFolder: '300-领域AREA',
   projectTaskTemplate: '',
   ollamaUrl: 'http://localhost:11434',
   ragflowUrl: 'http://localhost:9380',
   minimaxApiUrl: 'https://www.minimaxi.com/v1/token_plan/remains',
-  widgetOrder: 'calendar,deepseek,minimax,habits,ollama,ragflow,weeknotes,todotoday',
+  widgetOrder: 'deepseek,minimax,calendar,habits,ollama,ragflow,weeknotes,todotoday',
   widgetDeepseekEnabled: true,
   widgetCalendarEnabled: true,
   widgetHabitsEnabled: true,
@@ -86,6 +92,8 @@ const DEFAULT_SETTINGS: IFTOPluginSettings = {
   widgetWeeknotesEnabled: true,
   widgetTodotodayEnabled: true,
   widgetMinimaxEnabled: true,
+  widgetWeeknotesPath: '',
+  widgetTodotodoPath: '',
   zoom: 1,
   bgColor: '',
   borderRadius: 8,
@@ -147,9 +155,11 @@ export class IFTOView extends ItemView {
         taskFolder: this.plugin.settings.taskFolder,
         projectBase: this.plugin.settings.projectBase,
         projectCols: this.plugin.settings.projectCols,
+        archivePath: this.plugin.settings.archivePath,
         bookFolder: this.plugin.settings.bookFolder,
         paperFolder: this.plugin.settings.paperFolder,
         resourceRoot: this.plugin.settings.resourceRoot,
+        domainFolder: this.plugin.settings.domainFolder,
         projectTaskTemplate: this.plugin.settings.projectTaskTemplate,
         ollamaUrl: this.plugin.settings.ollamaUrl,
         ragflowUrl: this.plugin.settings.ragflowUrl,
@@ -161,6 +171,8 @@ export class IFTOView extends ItemView {
         widgetRagflowEnabled: this.plugin.settings.widgetRagflowEnabled,
         widgetWeeknotesEnabled: this.plugin.settings.widgetWeeknotesEnabled,
         widgetTodotodayEnabled: this.plugin.settings.widgetTodotodayEnabled,
+        widgetWeeknotesPath: this.plugin.settings.widgetWeeknotesPath,
+        widgetTodotodoPath: this.plugin.settings.widgetTodotodoPath,
         zoom: this.plugin.settings.zoom,
         bgColor: this.plugin.settings.bgColor,
         borderRadius: this.plugin.settings.borderRadius,
@@ -185,6 +197,39 @@ export class IFTOView extends ItemView {
 
       // Set function reference on containerEl for home.js to call (avoids all bridge/event issues)
       (this.containerEl as any).__createNote = () => this.createCollectionNote();
+
+      // Bridge: force Obsidian's active leaf/window back to IFTO-HOME, then focus
+      // the target input. This fixes the "input exists but no caret until Alt-Tab"
+      // problem at the Obsidian view layer instead of only retrying input.focus().
+      (window as any).__IFTO_forceInputFocus = (target?: HTMLElement) => {
+        const focusTarget = () => {
+          try {
+            if (target && document.body.contains(target)) {
+              target.focus({ preventScroll: true });
+              if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+                const len = target.value.length;
+                try { target.setSelectionRange(0, len); } catch (_) { target.select(); }
+              }
+              return;
+            }
+            this.containerEl.focus({ preventScroll: true });
+          } catch (_) { /* ignore */ }
+        };
+
+        try {
+          this.app.workspace.setActiveLeaf(this.leaf, false, true);
+        } catch (_) { /* ignore */ }
+        try {
+          this.containerEl.setAttribute('tabindex', '-1');
+          this.containerEl.focus({ preventScroll: true });
+        } catch (_) { /* ignore */ }
+
+        focusTarget();
+        requestAnimationFrame(() => focusTarget());
+        setTimeout(focusTarget, 30);
+        setTimeout(focusTarget, 100);
+        setTimeout(focusTarget, 250);
+      };
 
       // Bridge for listing files in a folder (used by inbox tabs)
       (window as any).__IFTO_listFiles = async (folder: string): Promise<string[]> => {
@@ -231,19 +276,13 @@ export class IFTOView extends ItemView {
             // Switching apps and back works because the blur/focus cycle forces
             // the editor to take focus. We replicate that with a delayed focus().
             setTimeout(() => {
-              let retries = 0;
-              const maxRetries = 10;
-              const fn = () => {
-                try {
-                  const view = leaf.view as any;
-                  if (view && view.editor && typeof view.editor.focus === 'function') {
-                    view.editor.focus();
-                  }
-                } catch (e) { /* ignore */ }
-                if (++retries < maxRetries) setTimeout(fn, 250);
-              };
-              fn();
-            }, 100);
+              try {
+                const view = leaf.view as any;
+                if (view && view.editor && typeof view.editor.focus === 'function') {
+                  view.editor.focus();
+                }
+              } catch (e) { /* ignore */ }
+            }, 60);
           }
         } catch (e) {
           console.error('IFTO: open file error', e);
@@ -806,10 +845,114 @@ export class IFTOView extends ItemView {
         } catch (e) { console.error('IFTO: getFilesFrontmatterRecursive error', e); return []; }
       };
 
-      // Bridge for refreshing settings from the frontend (widget toggle sync)
+      // Bridge for domain skill tree: recursively read 300-领域AREA, return nested tree
+      // with frontmatter + Kanban completion stats per file.
+      (window as any).__IFTO_getDomainTree = async (folder: string): Promise<any[]> => {
+        const stripPrefix = (name: string) => name.replace(/^\d+-/, '');
+        interface FileInfo { name: string; path: string; title: string; description: string; tags: string; totalTasks: number; completedTasks: number; }
+        interface FolderInfo { name: string; path: string; files: FileInfo[]; subfolders: FolderInfo[]; fileCount: number; totalTasks: number; completedTasks: number; }
+        const buildTree = async (dir: string): Promise<FolderInfo | null> => {
+          try {
+            const adapter = this.app.vault.adapter;
+            const result = await adapter.list(dir);
+            const files: FileInfo[] = [];
+            let totalTasks = 0, completedTasks = 0;
+            for (const f of (result.files || [])) {
+              if (!f.endsWith('.md')) continue;
+              const fname = f.split('/').pop() || '';
+              if (fname === '_INDEX-300-领域.md') continue;
+              const content = await adapter.read(f);
+              const fm: Record<string, string> = {};
+              const m = content.match(/^---\n([\s\S]*?)\n---/);
+              if (m) {
+                m[1].split('\n').forEach(line => {
+                  const kv = line.match(/^\s*([^:]+?)\s*:\s*(.+)/);
+                  if (kv) fm[kv[1].trim()] = kv[2].trim().replace(/^['"]|['"]$/g, '');
+                });
+              }
+              const taskMatches = content.match(/- \[( |x)\]/g);
+              const total = taskMatches ? taskMatches.length : 0;
+              const done = taskMatches ? taskMatches.filter(t => t === '- [x]').length : 0;
+              totalTasks += total;
+              completedTasks += done;
+              files.push({
+                name: fname, path: f,
+                title: fm['title'] || fname.replace('.md', ''),
+                description: fm['description'] || '',
+                tags: fm['tags'] || '',
+                totalTasks: total, completedTasks: done,
+              });
+            }
+            const subfolders: FolderInfo[] = [];
+            for (const sub of (result.folders || [])) {
+              const subInfo = await buildTree(sub);
+              if (subInfo) {
+                totalTasks += subInfo.totalTasks;
+                completedTasks += subInfo.completedTasks;
+                subfolders.push(subInfo);
+              }
+            }
+            const dirName = dir.split('/').pop() || '';
+            return {
+              name: stripPrefix(dirName), path: dir,
+              files, subfolders,
+              fileCount: files.length,
+              totalTasks, completedTasks,
+            };
+          } catch (e) { return null; }
+        };
+        try {
+          if (!await this.app.vault.adapter.exists(folder)) return [];
+          const result = await this.app.vault.adapter.list(folder);
+          const branches: FolderInfo[] = [];
+          for (const sub of (result.folders || [])) {
+            const info = await buildTree(sub);
+            if (info) branches.push(info);
+          }
+          return branches;
+        } catch (e) { console.error('IFTO: getDomainTree error', e); return []; }
+      };
+
+      // Bridge for refreshing settings from the frontend (widget toggle sync,
+      // folder path edits, template path edits, …). Re-publishes ALL settings
+      // to window.__IFTO_SETTINGS so getter-based path accessors in home.js
+      // (TODO_FOLDER, ACTIVITY_FOLDER, getInboxFolder(), …) see new values
+      // without needing the user to restart Obsidian.
       (window as any).__IFTO_refreshSettings = () => {
         (window as any).__IFTO_SETTINGS = {
           ...(window as any).__IFTO_SETTINGS,
+          heroImageUrl: this.plugin.settings.heroImageUrl,
+          heroImageFolder: this.plugin.settings.heroImageFolder,
+          deepseekKey: this.plugin.settings.deepseekApiKey,
+          minimaxKey: this.plugin.settings.minimaxApiKey,
+          minimaxApiUrl: this.plugin.settings.minimaxApiUrl,
+          widgetMinimaxEnabled: this.plugin.settings.widgetMinimaxEnabled,
+          readingTemplate: this.plugin.settings.readingTemplate,
+          collectionTemplate: this.plugin.settings.collectionTemplate,
+          notePath: this.plugin.settings.notePath,
+          noteTemplate: this.plugin.settings.noteTemplate,
+          reviewDailyPath: this.plugin.settings.reviewDailyPath,
+          reviewWeeklyPath: this.plugin.settings.reviewWeeklyPath,
+          reviewMonthlyPath: this.plugin.settings.reviewMonthlyPath,
+          reviewProjectPath: this.plugin.settings.reviewProjectPath,
+          reviewDailyTemplate: this.plugin.settings.reviewDailyTemplate,
+          reviewWeeklyTemplate: this.plugin.settings.reviewWeeklyTemplate,
+          reviewMonthlyTemplate: this.plugin.settings.reviewMonthlyTemplate,
+          reviewProjectTemplate: this.plugin.settings.reviewProjectTemplate,
+          inboxFolder: this.plugin.settings.inboxFolder,
+          quickLearnFolder: this.plugin.settings.quickLearnFolder,
+          todoFolder: this.plugin.settings.todoFolder,
+          activityFolder: this.plugin.settings.activityFolder,
+          taskFolder: this.plugin.settings.taskFolder,
+          projectBase: this.plugin.settings.projectBase,
+          projectCols: this.plugin.settings.projectCols,
+          bookFolder: this.plugin.settings.bookFolder,
+          paperFolder: this.plugin.settings.paperFolder,
+          resourceRoot: this.plugin.settings.resourceRoot,
+          domainFolder: this.plugin.settings.domainFolder,
+          projectTaskTemplate: this.plugin.settings.projectTaskTemplate,
+          ollamaUrl: this.plugin.settings.ollamaUrl,
+          ragflowUrl: this.plugin.settings.ragflowUrl,
           widgetOrder: this.plugin.settings.widgetOrder,
           widgetDeepseekEnabled: this.plugin.settings.widgetDeepseekEnabled,
           widgetCalendarEnabled: this.plugin.settings.widgetCalendarEnabled,
@@ -818,9 +961,10 @@ export class IFTOView extends ItemView {
           widgetRagflowEnabled: this.plugin.settings.widgetRagflowEnabled,
           widgetWeeknotesEnabled: this.plugin.settings.widgetWeeknotesEnabled,
           widgetTodotodayEnabled: this.plugin.settings.widgetTodotodayEnabled,
-          widgetMinimaxEnabled: this.plugin.settings.widgetMinimaxEnabled,
-          deepseekKey: this.plugin.settings.deepseekApiKey,
-          minimaxKey: this.plugin.settings.minimaxApiKey,
+          widgetWeeknotesPath: this.plugin.settings.widgetWeeknotesPath,
+          widgetTodotodoPath: this.plugin.settings.widgetTodotodoPath,
+          zoom: this.plugin.settings.zoom,
+          bgColor: this.plugin.settings.bgColor,
           borderRadius: this.plugin.settings.borderRadius,
         };
       };
@@ -1105,25 +1249,8 @@ export class IFTOView extends ItemView {
       if (!exists) await this.app.vault.createFolder(folder);
       const file = await this.app.vault.create(fullPath, content);
       new Notice(`已创建: ${fileName}`);
-      // Open in new tab with explicit editor focus
-      const leaf = this.app.workspace.getLeaf(true);
-      await leaf.openFile(file);
-      this.app.workspace.setActiveLeaf(leaf, false, true);
-      // Delayed focus — the editor's contenteditable may not be fully rendered yet
-      setTimeout(() => {
-        let retries = 0;
-        const maxRetries = 10;
-        const fn = () => {
-          try {
-            const view = leaf.view as any;
-            if (view && view.editor && typeof view.editor.focus === 'function') {
-              view.editor.focus();
-            }
-          } catch (e) { /* ignore */ }
-          if (++retries < maxRetries) setTimeout(fn, 250);
-        };
-        fn();
-      }, 100);
+      // Open in new tab
+      await this.app.workspace.getLeaf(true).openFile(file);
     } catch (e) {
       new Notice(`创建失败: ${e.message}`);
     }
@@ -1260,6 +1387,14 @@ export default class IFTOPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+    // Re-publish settings to the running home.js view so getter-based path
+    // accessors (TODO_FOLDER, ACTIVITY_FOLDER, getInboxFolder(), …) pick up
+    // changes without needing the user to restart Obsidian.
+    try {
+      if (typeof (window as any).__IFTO_refreshSettings === 'function') {
+        (window as any).__IFTO_refreshSettings();
+      }
+    } catch (e) { /* view not open yet — fine */ }
   }
 
   async activateView() {
@@ -1484,6 +1619,30 @@ class IFTOSettingsTab extends PluginSettingTab {
       }
     });
 
+    new Setting(settingsRoot)
+      .setName('本周笔记路径')
+      .setDesc('小组件-本周笔记 读取的文件夹路径，留空则使用笔记功能路径')
+      .addText(text => text
+        .setPlaceholder('000-信箱INBOX/040-笔记')
+        .setValue(this.plugin.settings.widgetWeeknotesPath)
+        .onChange(async (value) => {
+          this.plugin.settings.widgetWeeknotesPath = value.trim();
+          await this.plugin.saveSettings();
+          if (typeof (window as any).__IFTO_refreshWidgetDisplay === 'function') (window as any).__IFTO_refreshWidgetDisplay();
+        }));
+
+    new Setting(settingsRoot)
+      .setName('今日待办路径')
+      .setDesc('小组件-今日待办 读取的文件夹路径，留空则使用今日待办功能路径')
+      .addText(text => text
+        .setPlaceholder('000-信箱INBOX/031-今日待办')
+        .setValue(this.plugin.settings.widgetTodotodoPath)
+        .onChange(async (value) => {
+          this.plugin.settings.widgetTodotodoPath = value.trim();
+          await this.plugin.saveSettings();
+          if (typeof (window as any).__IFTO_refreshWidgetDisplay === 'function') (window as any).__IFTO_refreshWidgetDisplay();
+        }));
+
     settingsRoot.createEl('h3', { text: '收集功能' });
 
     new Setting(settingsRoot)
@@ -1649,6 +1808,17 @@ class IFTOSettingsTab extends PluginSettingTab {
         }));
 
     new Setting(settingsRoot)
+      .setName('领域')
+      .setDesc('领域技能树读取的根文件夹路径')
+      .addText(text => text
+        .setPlaceholder('300-领域AREA')
+        .setValue(this.plugin.settings.domainFolder)
+        .onChange(async (value) => {
+          this.plugin.settings.domainFolder = value.trim();
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(settingsRoot)
       .setName('今日待办')
       .setDesc('今日待办文件存放的文件夹路径')
       .addText(text => text
@@ -1711,6 +1881,17 @@ class IFTOSettingsTab extends PluginSettingTab {
         .setValue(this.plugin.settings.projectCols)
         .onChange(async (value) => {
           this.plugin.settings.projectCols = value.trim();
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(settingsRoot)
+      .setName('项目归档路径')
+      .setDesc('归档项目文件存放的文件夹路径')
+      .addText(text => text
+        .setPlaceholder('500-归档资料/510-归档项目')
+        .setValue(this.plugin.settings.archivePath)
+        .onChange(async (value) => {
+          this.plugin.settings.archivePath = value.trim();
           await this.plugin.saveSettings();
         }));
 

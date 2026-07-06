@@ -11,10 +11,10 @@
             "id": "3dbbc703548182ec",
             "type": "leaf",
             "state": {
-              "type": "empty",
+              "type": "ifto-homepage",
               "state": {},
-              "icon": "lucide-file",
-              "title": "新标签页"
+              "icon": "blocks",
+              "title": "IFTO-HOME 首页"
             }
           }
         ]
@@ -198,6 +198,19 @@
   },
   "active": "3dbbc703548182ec",
   "lastOpenFiles": [
+    "500-归档资料/510-归档项目",
+    "500-归档资料/510-归档项目/20260627_235940.md",
+    "500-归档资料/510-收集归档/060-重复副本/1113.md",
+    "500-归档资料/510-收集归档/060-重复副本/1126.md",
+    "500-归档资料/510-收集归档/060-重复副本/07.26.md",
+    "500-归档资料/510-收集归档/短视频？.md",
+    "900-数据库/930-图片资源/936-封面图片/Rectangle 6.jpg",
+    "900-数据库/930-图片资源/936-封面图片/raget-ri-CjygPlB1Dh4-unsplash.jpg",
+    "900-数据库/930-图片资源/936-封面图片/justin-min-tNg5KbzRPmA-unsplash.jpg",
+    "900-数据库/930-图片资源/936-封面图片/jason-pan-KSxrFZKfj98-unsplash.jpg",
+    "900-数据库/930-图片资源/936-封面图片/aboodi-vesakaran-B6FqadlMuZE-unsplash.jpg",
+    "900-数据库/930-图片资源/935-书籍图片/1234.jpg",
+    "900-数据库/930-图片资源/935-书籍图片/(认准正版 京仓配送)【大卫·奥格威经典】一个广告人的自白（纪念版）【行情 报价 价格 评测】-京东.jpg",
     "000-信箱 INBOX/010-收集/20260625_203234.md",
     "900-数据库/920-Rule&Skill/010-Frontmatter规则.md",
     "900-数据库/920-Rule&Skill/000-Rule总览.md",
@@ -221,12 +234,6 @@
     "900-数据库/910-模板Templates/任务MISSiON.md",
     "000-信箱 INBOX/010-收集/20260625_182853.md",
     "900-数据库/910-模板Templates/Zotero-Obsidian.md",
-    "900-数据库/910-模板Templates/paper-template-new.md",
-    "900-数据库/910-模板Templates/paper-template-1.0.md",
-    "900-数据库/910-模板Templates/paper-template rating.md",
-    "900-数据库/910-模板Templates/paper-template.md",
-    "900-数据库/910-模板Templates/paper-analysis.md",
-    "900-数据库/910-模板Templates/Note.md",
     "500-归档资料/510-归档项目/未命名项目1",
     "100-工作台WORKDESK/110-草稿箱/未命名项目1",
     "100-工作台WORKDESK/120-项目管理/重命名项目",
@@ -238,13 +245,6 @@
     "900-数据库/920-图片资源/926-封面图片/justin-min-tNg5KbzRPmA-unsplash.jpg",
     "900-数据库/920-图片资源/926-封面图片/raget-ri-CjygPlB1Dh4-unsplash.jpg",
     "未命名.canvas",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.040-记忆系统/439.020-知识库/439.021-RAG/RAG技术在文物保护规划中的应用与价值——成渝古道（重庆段）文物主题游径规划中的RAG技术应用__assets/image-20260105064920321.png",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.040-记忆系统/439.020-知识库/439.021-RAG/RAG技术在文物保护规划中的应用与价值——成渝古道（重庆段）文物主题游径规划中的RAG技术应用__assets/image-20260105032203249.png",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.040-记忆系统/439.020-知识库/439.021-RAG/RAG技术在文物保护规划中的应用与价值——成渝古道（重庆段）文物主题游径规划中的RAG技术应用__assets/image-20260105030605125.png",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.040-记忆系统/439.020-知识库/439.021-RAG/RAG技术在文物保护规划中的应用与价值——成渝古道（重庆段）文物主题游径规划中的RAG技术应用__assets/image-20260105030538328.png",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.040-记忆系统/439.020-知识库/439.021-RAG/RAG技术在文物保护规划中的应用与价值——成渝古道（重庆段）文物主题游径规划中的RAG技术应用__assets/image-20260105030500511.png",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.040-记忆系统/439.020-知识库/439.021-RAG/RAG技术在文物保护规划中的应用与价值——成渝古道（重庆段）文物主题游径规划中的RAG技术应用__assets/image-20260105030413506.png",
-    "400-资源RESOURCE/430-生产力/439-AI技术/439.020-Agent/439.021-Claude Code/如何绕过claudecode的登录安装国内的大模型（安装可以使用本地大模型的claude code）__assets/image-20260407052054456.png",
     "未命名 1.canvas"
   ]
 }

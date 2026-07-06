@@ -311,7 +311,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   background-size:cover;background-position:center;background-repeat:no-repeat;
 }
 .hero-img-label{
-  position:absolute;bottom:0;left:0;width:220px;height:70px;
+  position:absolute;bottom:0;width:110px;height:70px;z-index:6;
   background:var(--ifto-bg,var(--bg));color:var(--g1);
   display:flex;align-items:center;justify-content:center;
   font-size:16px;letter-spacing:2px;cursor:pointer;
@@ -324,6 +324,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .hero-img-label:hover{
   font-weight:700;
 }
+.hero-img-label.active{font-weight:700;z-index:10}
 
 /* ====== SECTION ====== */
 .section{padding:0 var(--section-pad);margin:0 auto;margin-bottom:0;position:relative;max-width:1600px}
@@ -380,7 +381,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .side-drop-area{padding:12px 6px;border:1px dashed var(--ifto-divider);text-align:center;font-size:10px;color:var(--ifto-text-2);cursor:default;transition:all .15s;flex:1;display:flex;align-items:center;justify-content:center;min-height:50px}
 .side-drop-area.drag-over{background:var(--ifto-g6,var(--g6));border-color:var(--ifto-accent);color:var(--ifto-accent)}
 .side-row{display:flex;gap:6px;flex:1;background:transparent;padding:0}
-.side-col{flex:1;display:flex;flex-direction:column;background:var(--ifto-card-bg);border:1px solid var(--ifto-divider);padding:12px 12px 16px;box-shadow:var(--ifto-shadow);border-radius:var(--ifto-radius,8px);gap:6px}
+.side-col{flex:1;display:flex;flex-direction:column;background:var(--ifto-card-bg);border:1px solid var(--ifto-divider);padding:12px;box-shadow:var(--ifto-shadow);border-radius:var(--ifto-radius,8px)}
 .card.dragging{opacity:.4}
 .card.drag-over-target{outline:2px dashed var(--ifto-accent);transform:scale(1.02)}
 
@@ -629,6 +630,51 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   .activity-grid{height:auto;max-height:250px;padding:12px}
   .project-col{min-height:auto;max-height:300px}
 }
+
+/* ====== Domain Skill Tree ====== */
+.domain-tree-overlay {
+  position: absolute; inset: 0;
+  z-index: 5; overflow: hidden;
+  animation: domainFadeIn .3s ease;
+}
+@keyframes domainFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.domain-tree-inner {
+  position: absolute; inset: 0;
+  transform-origin: center center;
+}
+.dt-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; font-size: 14px; color: var(--ifto-text-2, #6b7280); gap: 6px;
+}
+.st-sector { transition: opacity .15s; pointer-events: auto; }
+.st-sector:hover { opacity: 0.15; }
+.domain-tree-loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; font-size: 14px; color: var(--ifto-text-2, #6b7280);
+}
+/* Zoom controls */
+.dt-zoom-ctrl {
+  position: absolute; bottom: 0; right: 14px; z-index: 20;
+  display: flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: none; border-radius: 0; padding: 0;
+  box-shadow: none;
+  user-select: none; pointer-events: auto;
+}
+.dt-zoom-btn {
+  width: 26px; height: 26px; border: none;
+  background: var(--ifto-g6, var(--g6, #f2f2f2));
+  border-radius: var(--ifto-radius, 4px); cursor: pointer;
+  font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ifto-text, #111);
+  transition: background .15s;
+}
+.dt-zoom-btn:hover { background: var(--ifto-divider, #e5e7eb); }
+.dt-zoom-pct {
+  font-size: 12px; font-weight: 600; color: var(--ifto-text, #111);
+  min-width: 36px; text-align: center;
+}
 </style>
 </head>
 <body>
@@ -676,7 +722,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
     </div>
     <div class="hero-right">
       <div class="hero-img-placeholder" id="heroImage" style="background-image:url('https://picsum.photos/1200/800');background-size:cover;background-position:center">
-        <div class="hero-img-label" id="heroRefreshLabel">换个心情</div>
+        <div class="hero-img-label" id="heroRefreshLabel" style="left:0">换个心情</div>
+        <div style="position:absolute;bottom:0;left:110px;width:30px;height:70px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--g1);background:var(--ifto-bg,var(--bg));z-index:6;pointer-events:none">/</div>
+        <div class="hero-img-label" id="heroDomainLabel" style="left:140px">领域</div>
+        <div class="domain-tree-overlay" id="domainTreeOverlay" style="display:none">
+          <div class="domain-tree-inner" id="domainTreeInner"></div>
+        </div>
+        <div class="dt-zoom-ctrl" id="domainZoomCtrl" style="position:absolute;bottom:35px;right:14px;z-index:20;transform:translateY(50%);display:none">
+          <span class="dt-zoom-pct" id="domainZoomPct">100%</span>
+          <button class="dt-zoom-btn" id="domainResetBtn" title="重置视角">&#x21BA;</button>
+        </div>
       </div>
     </div>
   </section>

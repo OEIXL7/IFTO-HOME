@@ -730,3 +730,42 @@ body.theme-dark .ifto-container {
 .hero-img-label {
   border-radius: var(--ifto-radius, 8px) !important;
 }
+
+/* ====== Domain Skill Tree ====== */
+.domain-tree-overlay {
+  border-radius: var(--ifto-radius, 8px) !important;
+  overflow: hidden;
+}
+
+/* Zoom controls */
+.dt-zoom-ctrl {
+  position: absolute !important;
+  bottom: 35px !important;
+  transform: translateY(50%);
+  right: 14px !important;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.dt-zoom-btn {
+  width: 26px; height: 26px; border: none;
+  background: var(--ifto-g6, var(--g6, #f2f2f2));
+  border-radius: var(--ifto-radius, 4px); cursor: pointer;
+  font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ifto-text, #111);
+  transition: background .15s;
+}
+.dt-zoom-btn:hover { background: var(--ifto-divider, #e5e7eb); }
+.dt-zoom-pct {
+  font-size: 12px; font-weight: 600; color: var(--ifto-text, #111);
+  min-width: 36px; text-align: center;
+}

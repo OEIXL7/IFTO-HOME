@@ -23,106 +23,25 @@ var inboxCards = [
 (function installIftoFocusGuard(){
   if(window.__IFTO_FOCUS_GUARD_INSTALLED) return;
   window.__IFTO_FOCUS_GUARD_INSTALLED = true;
-  var protectedInput = null;
-  var protectTimer = null;
-  var protectEnd = 0;
-  function isIftoEditable(el) {
+  function isIftoEditable(el){
     if(!el) return false;
     var tag = el.tagName;
     if(tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
     if(tag === 'INPUT' && el.type && !['text','search','url','email','tel',''].includes(el.type)) return false;
     return !!el.closest('.ifto-container, .widget-card, [id="widgetBody"]');
   }
-  function pinFocus(el) {
-    if(!el || !document.contains(el)) return;
+  function pinFocus(el){
+    if(!document.contains(el)) return;
     if(document.activeElement === el) return;
-    try {
-      // Force Electron window focus first — fixes the alt-tab workaround
-      var er = window.require && window.require('electron');
-      if(er) {
-        var win = (er.remote && er.remote.getCurrentWindow && er.remote.getCurrentWindow())
-                || (er.getCurrentWindow && er.getCurrentWindow());
-        if(win && typeof win.focus === 'function') win.focus();
-      }
-    } catch(_) {}
-    try { window.focus(); } catch(_) {}
     try { el.focus({preventScroll:true}); } catch(_) {}
   }
-  function startProtect(el) {
-    protectedInput = el;
-    protectEnd = Date.now() + 3000; // 3-second protection window
-    if(protectTimer) clearInterval(protectTimer);
-    protectTimer = setInterval(function(){
-      if(Date.now() > protectEnd || !document.contains(protectedInput)) {
-        clearInterval(protectTimer);
-        protectTimer = null;
-        protectedInput = null;
-        return;
-      }
-      // Only re-focus if focus has been stolen away from our input
-      if(document.activeElement && document.activeElement !== protectedInput &&
-         protectedInput.closest('.ifto-container')) {
-        pinFocus(protectedInput);
-      }
-    }, 80); // check every 80ms
-  }
-  function releaseProtect() {
-    if(protectTimer) { clearInterval(protectTimer); protectTimer = null; }
-    protectedInput = null;
-  }
-  window.__IFTO_stopFocusProtect = releaseProtect;
-  window.__IFTO_protectFocus = function(el) {
-    if(el && isIftoEditable(el)) startProtect(el);
-  };
-  // Guard 1: mousedown → rapid retry + start periodic protection
   document.addEventListener('mousedown', function(e){
     var el = e.target.closest && e.target.closest('input, textarea');
     if(!el || !isIftoEditable(el)) return;
-    // Rapid retries in the first 500ms (catches immediate focus steals)
-    pinFocus(el);
     setTimeout(function(){ pinFocus(el); }, 0);
     setTimeout(function(){ pinFocus(el); }, 30);
-    setTimeout(function(){ pinFocus(el); }, 80);
-    setTimeout(function(){ pinFocus(el); }, 150);
-    setTimeout(function(){ pinFocus(el); }, 300);
-    setTimeout(function(){ pinFocus(el); }, 500);
-    // Start periodic protection (every 80ms for up to 3s)
-    startProtect(el);
-  }, true);
-  // Guard 2: focusin — catch keyboard/focus() calls too
-  document.addEventListener('focusin', function(e){
-    var el = e.target;
-    if(!isIftoEditable(el)) return;
-    // If this is an IFTO input that just got focus, protect it
-    startProtect(el);
-  }, true);
-  // Guard 3: window blur → re-focus our input when user returns
-  window.addEventListener('blur', function(){
-    if(protectedInput && document.contains(protectedInput)) {
-      // User may have alt-tabbed away; when they come back, re-focus
-      var checkOnFocus = function(){
-        window.removeEventListener('focus', checkOnFocus);
-        setTimeout(function(){
-          if(protectedInput && document.contains(protectedInput) &&
-             document.activeElement !== protectedInput) {
-            pinFocus(protectedInput);
-          }
-        }, 50);
-      };
-      window.addEventListener('focus', checkOnFocus);
-    }
-  });
-  // Guard 4: cleanup on blur of the protected input (user finished editing)
-  document.addEventListener('blur', function(e){
-    if(e.target && protectedInput && e.target === protectedInput) {
-      // Don't release immediately — Obsidian may briefly steal focus then return
-      setTimeout(function(){
-        if(protectedInput && document.activeElement !== protectedInput &&
-           (!document.activeElement || !isIftoEditable(document.activeElement))) {
-          releaseProtect();
-        }
-      }, 300);
-    }
+    setTimeout(function(){ pinFocus(el); }, 100);
+    setTimeout(function(){ pinFocus(el); }, 250);
   }, true);
 })();
 // ============================================================
@@ -133,11 +52,28 @@ function _getFolder(key, fallback) {
   var s = window.__IFTO_SETTINGS || {};
   return s[key] || fallback;
 }
-var TODO_FOLDER = _getFolder('todoFolder', '010-信箱 INBOX/031-今日待办');
-var ACTIVITY_FOLDER = _getFolder('activityFolder', '010-信箱 INBOX/030-活动清单');
+// IMPORTANT: these three used to be `var TODO_FOLDER = _getFolder(...)` — i.e.
+// resolved once at script-load time and frozen. That meant changing the path
+// in settings (todoFolder / activityFolder / taskFolder) did NOT take effect
+// until the user reloaded Obsidian, and even then only if main.ts had
+// re-pushed __IFTO_SETTINGS. Defining them as getters on the global makes
+// every reference (`TODO_FOLDER`, `ACTIVITY_FOLDER`, `TASK_FOLDER`) re-read
+// __IFTO_SETTINGS at the moment of use, matching how getInboxFolder() etc.
+// already work for the other folder fields.
+Object.defineProperty(globalThis, 'TODO_FOLDER', {
+  get: function() { return _getFolder('todoFolder', '010-信箱 INBOX/031-今日待办'); },
+  configurable: true
+});
+Object.defineProperty(globalThis, 'ACTIVITY_FOLDER', {
+  get: function() { return _getFolder('activityFolder', '010-信箱 INBOX/030-活动清单'); },
+  configurable: true
+});
+Object.defineProperty(globalThis, 'TASK_FOLDER', {
+  get: function() { return _getFolder('taskFolder', '100-工作台WORKDESK/120-项目管理/121-未开始'); },
+  configurable: true
+});
 var _organizeResourceExpanded = [];
 var _organizeProjectExpanded = [];
-var TASK_FOLDER = _getFolder('taskFolder', '100-工作台WORKDESK/120-项目管理/121-未开始');
 function getInboxFolder() { return _getFolder('inboxFolder', '010-信箱 INBOX/020-收集'); }
 function getQuickLearnFolder() { return _getFolder('quickLearnFolder', '010-信箱 INBOX/011-快速学习'); }
 function getProjectBase() { return _getFolder('projectBase', '100-工作台WORKDESK/120-项目管理'); }
@@ -179,8 +115,6 @@ function switchInboxTab(tab) {
 
 async function renderInbox() {
   try {
-    // Skip re-render if user is doing an inline rename
-    if(window.__IFTO_renaming || window.__IFTO_creating) return;
     var grid = document.getElementById('inboxGrid');
     if(!grid) return;
     if(inboxTab === 'collect') await renderInboxCollect(grid);
@@ -324,7 +258,7 @@ async function renderInboxOrganize(grid) {
   sidebarHtml += '</div>';
 
   // 今日待办 / 活动清单
-  sidebarHtml += '<div class="side-row" style="flex:1.6;min-height:0">';
+  sidebarHtml += '<div class="side-row" style="flex:1;min-height:0">';
   sidebarHtml += '<div class="side-col"><div class="side-box-title">今日待办</div><div class="side-drop-area" id="dropTodo" data-target="__todo__" style="flex:1">拖拽至此</div></div>';
   sidebarHtml += '<div class="side-col"><div class="side-box-title">活动清单</div><div class="side-drop-area" id="dropActivity" data-target="__activity__" style="flex:1">拖拽至此</div></div>';
   sidebarHtml += '</div></div>';
@@ -816,7 +750,7 @@ async function renderTodo() {
     // is the root cause of "double-click on freshly created card shows no cursor"
     // — vault.on('create') fires renderActivity right when the dblclick handler
     // is mounting its input, and the re-render wipes it before focus lands.
-    if(window.__IFTO_renaming || window.__IFTO_creating) return;
+    if(window.__IFTO_renaming) return;
     // Clean up any orphaned rename inputs before re-render
     (function(){
       document.querySelectorAll('.todo-inline-edit').forEach(function(oi){
@@ -957,6 +891,7 @@ function protectInlineEditInput(input) {
   // Mark a global "renaming in progress" flag so background re-renders
   // (triggered by vault.on create/rename/modify events) don't wipe the input.
   window.__IFTO_renaming = true;
+  input.__iftoCreatedAt = Date.now();
   input.draggable = false;
   input.style.cursor = 'text';
   input.style.userSelect = 'text';
@@ -977,53 +912,82 @@ function protectInlineEditInput(input) {
   });
   input.addEventListener('focus', disableParentDrag);
   input.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
+
+  // ====== Grace-period blur bouncer ======
+  // During the first ~700ms after the input is created, any blur event is
+  // intercepted and bounced back to the input. This wins the focus race
+  // against Obsidian's leaf-focus / vault-event-driven focus theft.
+  //
+  // Crucially this listener is registered BEFORE the dblclick handler sets
+  // `input.onblur = ...` (which calls finishRename). Because it uses
+  // capture-phase + stopImmediatePropagation, it prevents the user-supplied
+  // onblur from running during the grace window — so the rename isn't
+  // committed prematurely on a transient focus blip, and the {once:true}
+  // teardown handler below also stays unfired.
+  //
+  // After the grace expires, blur events flow through normally and
+  // finishRename / cleanup run as expected.
+  function bounceBlur(ev) {
+    var elapsed = Date.now() - (input.__iftoCreatedAt || 0);
+    if(elapsed < 700 && document.body.contains(input)) {
+      ev.stopImmediatePropagation();
+      // Aggressively refocus across the same retry schedule used by
+      // focusInlineEditInput, so even multiple yank attempts lose.
+      setTimeout(function(){ try { input.focus({preventScroll:true}); } catch(_){} }, 0);
+      setTimeout(function(){ try { input.focus({preventScroll:true}); } catch(_){} }, 30);
+      setTimeout(function(){ try { input.focus({preventScroll:true}); } catch(_){} }, 100);
+    }
+  }
+  input.addEventListener('blur', bounceBlur, true);
+
+  // Real teardown blur handler — runs only after grace expires (because
+  // bounceBlur swallows earlier blurs via stopImmediatePropagation).
+  // Replaces the previous {once:true} handler that could clear
+  // __IFTO_renaming on a transient focus blip and let a background
+  // re-render wipe the still-active rename input.
   input.addEventListener('blur', function(){
-    // Don't release the renaming flag immediately — Obsidian may transiently
-    // steal focus (metadata cache update, workspace event, etc.) and then
-    // return it. Wait 150ms and check if the input is still the active element
-    // or if focus went to another IFTO input/select.
-    setTimeout(function(){
-      if(!document.contains(input) || input !== document.activeElement) {
-        // Truly abandoned: check if focus went to another IFTO input
-        var active = document.activeElement;
-        if(active && active.tagName === 'INPUT' && active.closest('.ifto-container')) {
-          // Focus moved to another IFTO input, keep renaming flag
-          return;
-        }
-        if(draggableParent) draggableParent.draggable = true;
-        window.__IFTO_renaming = false;
-        if(window.__IFTO_stopFocusProtect) window.__IFTO_stopFocusProtect();
-      }
-    }, 150);
+    if(draggableParent) draggableParent.draggable = true;
+    window.__IFTO_renaming = false;
   });
-  // Manually start the focus guard's periodic protection (every 80ms for 3s),
-  // so even if Obsidian's focus management prevents input.focus() from working,
-  // the guard will keep retrying until focus sticks.
-  if(window.__IFTO_protectFocus) window.__IFTO_protectFocus(input);
 }
 
 function focusInlineEditInput(input) {
-  // Focus the input directly WITHOUT blurring the current active element.
-  //
-  // CRITICAL: document.activeElement.blur() triggers Obsidian's workspace
-  // focus management, which immediately re-focuses whatever Obsidian considers
-  // the "active leaf" (often the editor). This races with input.focus() and
-  // Obsidian usually wins — result: no cursor in the rename input.
-  //
-  // Instead, just call input.focus() directly. The browser handles focus
-  // transitions between elements without needing the prior element to be
-  // explicitly blurred.
-  //
-  // If Obsidian still steals focus, the focus guard's periodic protection
-  // (started by protectInlineEditInput via __IFTO_protectFocus) will keep
-  // re-focusing the input every 80ms for 3 seconds.
+  // First ask the Obsidian plugin host to make the IFTO-HOME leaf active.
+  // This is the important part: it replaces the user's manual Alt-Tab workaround
+  // by making Obsidian itself route keyboard focus back into this ItemView.
+  try {
+    if(window.__IFTO_forceInputFocus) window.__IFTO_forceInputFocus(input);
+  } catch(e) {}
+
+  // Force Electron BrowserWindow OS-level focus first.
+  // Fixes the "new card double-click rename has no cursor until you alt-tab away
+  // and back" bug. Root cause: vault.create event triggers re-render concurrent
+  // with the dblclick, leaving Electron's window-focus state out of sync;
+  // input.focus() then becomes a no-op until the OS sends a real focus event.
+  try {
+    var er = window.require && window.require('electron');
+    if(er) {
+      var win = (er.remote && er.remote.getCurrentWindow && er.remote.getCurrentWindow())
+              || (er.getCurrentWindow && er.getCurrentWindow());
+      if(win && typeof win.focus === 'function') win.focus();
+    }
+  } catch(e) {}
+
   var focusInput = function(){
     if(!input || !document.body.contains(input)) return;
-    try { input.focus({preventScroll:true}); } catch(e) {}
     try {
+      // Release any stuck focus elsewhere so the browser will accept ours
+      if(document.activeElement && document.activeElement !== input
+         && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+    } catch(e) {}
+    try { window.focus(); } catch(e) {}
+    try {
+      input.focus({preventScroll:true});
       var len = input.value.length;
-      input.setSelectionRange(0, len);
-    } catch(e) { try { input.select(); } catch(e2) {} }
+      try { input.setSelectionRange(0, len); } catch(e2) { input.select(); }
+    } catch(e3) {}
   };
   focusInput();
   if(typeof requestAnimationFrame === 'function') {
@@ -1033,6 +997,12 @@ function focusInlineEditInput(input) {
   setTimeout(focusInput, 100);
   setTimeout(focusInput, 250);
   setTimeout(focusInput, 500);
+  // Extra retries near the tail of the 700ms grace period — the blur
+  // bouncer in protectInlineEditInput keeps fighting until 700ms, so we
+  // make sure focus is asserted one more time right before the grace
+  // ends. Without this, a yank-and-no-bounce-back at ~600ms can leave the
+  // input visible but cursor-less.
+  setTimeout(focusInput, 650);
 }
 
 function finishRename(oldPath, oldName, input, titleEl) {
@@ -1044,11 +1014,6 @@ function finishRename(oldPath, oldName, input, titleEl) {
   if(window.__IFTO_renameFile) {
     window.__IFTO_renameFile(oldPath, newFullName).then(function(ok){
       if(ok) {
-        // Clear renaming flag BEFORE triggering re-render — the blur handler's
-        // setTimeout(150ms) hasn't fired yet, so __IFTO_renaming is still true,
-        // and renderTodo/renderActivity would skip the re-render.
-        window.__IFTO_renaming = false;
-        if(window.__IFTO_stopFocusProtect) window.__IFTO_stopFocusProtect();
         // Update order file if exists: replace old name with new name
         var folder = oldPath.substring(0, oldPath.lastIndexOf('/'));
         var oldFile = oldPath.split('/').pop();
@@ -1072,17 +1037,12 @@ function finishRename(oldPath, oldName, input, titleEl) {
 
 // Helper: create a new todo file with checkbox
 async function createTodoFile() {
-  window.__IFTO_creating = true;
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
   if(window.__IFTO_createFile) {
     var ok = await window.__IFTO_createFile(TODO_FOLDER, fn, '- [ ] \n');
-    // Clear creating flag BEFORE explicit re-render so the render runs
-    window.__IFTO_creating = false;
     if(ok) renderTodo();
-  } else {
-    window.__IFTO_creating = false;
   }
 }
 
@@ -1090,7 +1050,7 @@ async function renderActivity() {
   try {
     // Skip re-render if user is currently editing — otherwise grid.innerHTML
     // would obliterate the inline rename input under the cursor.
-    if(window.__IFTO_renaming || window.__IFTO_creating) return;
+    if(window.__IFTO_renaming) return;
     var grid = document.getElementById('activityGrid');
     if(!grid) return;
     var all = (typeof window.__IFTO_listFiles === 'function')
@@ -1275,13 +1235,11 @@ function prependActivityCard(title, filename) {
 }
 
 async function createActivityFile() {
-  window.__IFTO_creating = true;
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
   if(window.__IFTO_createFile) {
     var ok = await window.__IFTO_createFile(ACTIVITY_FOLDER, fn, '- [ ] \n');
-    window.__IFTO_creating = false;
     if(ok) {
       prependActivityCard(ts, fn);
       // Prepend to order file so re-render keeps it at the top
@@ -1295,8 +1253,6 @@ async function createActivityFile() {
         } catch(e) {}
       }
     }
-  } else {
-    window.__IFTO_creating = false;
   }
 }
 
@@ -1706,8 +1662,6 @@ async function renderProject() {
     window.__ifto_renderProjectQueued = true;
     return;
   }
-  // Skip re-render if user is doing an inline rename — prevents wipes
-  if(window.__IFTO_renaming || window.__IFTO_creating) { window.__ifto_renderProjectQueued = true; return; }
   window.__ifto_renderProjectBusy = true;
   window.__ifto_renderProjectQueued = false;
   try {
@@ -2000,9 +1954,6 @@ function wireProjectColumns(container) {
           window.__IFTO_renameFile(oldPath, newName + '.md').then(function(ok){
             if(_isDraftPath(oldPath)) console.log('[IFTO] 草稿箱重命名: "' + oldPath + '" -> "' + newName + '.md" 结果:', ok);
             if(ok) renderProject();
-            // Clear renaming flag — blur's setTimeout(150ms) hasn't fired yet
-            window.__IFTO_renaming = false;
-            if(window.__IFTO_stopFocusProtect) window.__IFTO_stopFocusProtect();
           });
         }
       };
@@ -2056,13 +2007,9 @@ function wireProjectColumns(container) {
           window.__IFTO_renameFile(oldPath, newName + '.md').then(function(ok){
             if(ok) renderProject();
             else item.innerHTML = oldHtml;
-            // Clear renaming flag — blur's setTimeout(150ms) hasn't fired yet
-            window.__IFTO_renaming = false;
-            if(window.__IFTO_stopFocusProtect) window.__IFTO_stopFocusProtect();
           });
         } else {
           item.innerHTML = oldHtml;
-          window.__IFTO_renaming = false;
         }
       };
       input.onkeydown = function(e){
@@ -2104,9 +2051,6 @@ function wireProjectColumns(container) {
         if(!newName || newName === oldName) return;
         if(window.__IFTO_renameFolder) {
           window.__IFTO_renameFolder(oldPath, newName).then(function(ok){
-            // Clear renaming flag — blur's setTimeout(150ms) hasn't fired yet
-            window.__IFTO_renaming = false;
-            if(window.__IFTO_stopFocusProtect) window.__IFTO_stopFocusProtect();
             if(ok) renderProject();
           });
         }
@@ -2544,7 +2488,8 @@ function wireProjectColumns(container) {
         this.classList.remove('drag-over');
         var path = e.dataTransfer.getData('text/plain');
         if(!path) return;
-        var archiveRoot = '500-归档资料/510-归档项目';
+        var s2 = window.__IFTO_SETTINGS || {};
+var archiveRoot = s2.archivePath || '500-归档资料/510-归档项目';
 
         // Folder drop — archive only completed files, not the whole folder
         if(!path.endsWith('.md')) {
@@ -3021,6 +2966,16 @@ try { renderReview(); } catch(e){console.error('IFTO: init review error',e)}
 
 // ====== Shortcut buttons ======
 function _getSC(k, fb) { var s = window.__IFTO_SETTINGS || {}; return s[k] || fb; }
+// Prefer the primary settings field (the one actually exposed by the settings
+// panel), then fall back to a legacy "shortcut*"-prefixed override if the user
+// has manually set one, then the hardcoded default. Previously the shortcut
+// buttons ONLY read shortcut*-prefixed keys, which don't exist in the settings
+// panel — so user paths typed into 设置 were ignored and every shortcut wrote
+// to the hardcoded default folder.
+function _getSCPath(primaryKey, legacyKey, fb) {
+  var s = window.__IFTO_SETTINGS || {};
+  return s[primaryKey] || s[legacyKey] || fb;
+}
 
 // 新建收集 shortcut
 try{
@@ -3030,9 +2985,9 @@ if(_sbtn){_sbtn.onclick = async function(e){
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
-  var folder = _getSC('shortcutCollectPath', '010-信箱 INBOX/020-收集');
+  var folder = _getSCPath('inboxFolder', 'shortcutCollectPath', '010-信箱 INBOX/020-收集');
   var s = window.__IFTO_SETTINGS || {};
-  var tpl = s.shortcutCollectTemplate || '';
+  var tpl = s.collectionTemplate || s.shortcutCollectTemplate || '';
   var content = '';
   if(tpl && window.__IFTO_readFile){
     content = (await window.__IFTO_readFile(tpl)) || '';
@@ -3047,7 +3002,7 @@ if(_sbtn){_sbtn.onclick = async function(e){
 }}
 }catch(e){console.error('IFTO: shortcut collect btn error',e)}
 
-// 新建待办 shortcut
+// 新建待办 shortcut (creates an activity item — handler calls renderActivity)
 try{
 var _st = document.getElementById('s-todo');
 if(_st){_st.onclick = async function(e){
@@ -3055,7 +3010,7 @@ if(_st){_st.onclick = async function(e){
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
-  var folder = _getSC('shortcutTodoPath', '010-信箱 INBOX/030-活动清单');
+  var folder = _getSCPath('activityFolder', 'shortcutTodoPath', '010-信箱 INBOX/030-活动清单');
   var s = window.__IFTO_SETTINGS || {};
   var tpl = s.shortcutTodoTemplate || '';
   var content = '- [ ] \n';
@@ -3090,7 +3045,7 @@ if(_stask){_stask.onclick = async function(e){
   e.preventDefault();
   var s = window.__IFTO_SETTINGS || {};
   var tpl = s.projectTaskTemplate || '';
-  var folder = _getSC('shortcutTaskPath', '100-工作台WORKDESK/120-项目管理/121-未开始');
+  var folder = _getSCPath('taskFolder', 'shortcutTaskPath', '100-工作台WORKDESK/120-项目管理/121-未开始');
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
@@ -3122,12 +3077,12 @@ var _sn = document.getElementById('s-note');
 if(_sn){_sn.onclick = async function(e){
   e.preventDefault();
   var s = window.__IFTO_SETTINGS || {};
-  var folder = _getSC('shortcutNotePath', '010-信箱 INBOX/040-笔记');
+  var folder = _getSCPath('notePath', 'shortcutNotePath', '010-信箱 INBOX/040-笔记');
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
   var content = '';
-  var tpl = s.shortcutNoteTemplate;
+  var tpl = s.noteTemplate || s.shortcutNoteTemplate;
   if(tpl && window.__IFTO_readFile){
     content = (await window.__IFTO_readFile(tpl)) || '';
     if(content && window.__IFTO_processTemplate){
@@ -3144,7 +3099,8 @@ if(_sn){_sn.onclick = async function(e){
 function renderWeekNotesPage() {
   var body = document.getElementById('widgetBody');
   if(!body) return;
-  var notePath = getNoteFolder();
+  var s3 = window.__IFTO_SETTINGS || {};
+  var notePath = s3.widgetWeeknotesPath || getNoteFolder();
   var now = new Date();
   var day = now.getDay();
   var diff = day === 0 ? 6 : day - 1;
@@ -3195,7 +3151,8 @@ function renderWeekNotesPage() {
 function renderTodoWidgetPage() {
   var body = document.getElementById('widgetBody');
   if(!body) return;
-  var todoFolder = TODO_FOLDER;
+  var s4 = window.__IFTO_SETTINGS || {};
+  var todoFolder = s4.widgetTodotodoPath || TODO_FOLDER;
   var now = new Date();
   var dateStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   body.innerHTML = '<div class="token-loading">加载中...</div>';
@@ -3305,7 +3262,7 @@ var widgetTitles = {
 };
 
 function getWidgetList() {
-  var order = (window.__IFTO_SETTINGS&&window.__IFTO_SETTINGS.widgetOrder) || 'calendar,deepseek,minimax,habits,ollama,ragflow,weeknotes,todotoday';
+  var order = (window.__IFTO_SETTINGS&&window.__IFTO_SETTINGS.widgetOrder) || 'deepseek,minimax,calendar,habits,ollama,ragflow,weeknotes,todotoday';
   var ids = order.split(',').map(function(s){return s.trim()}).filter(function(s){return s});
   // Append any known widget renderer not present in saved order (forward-compat)
   Object.keys(widgetRenderers).forEach(function(k){
@@ -4527,7 +4484,365 @@ loadHeroImage();
 // Click "换个心情" to randomly switch hero image
 document.getElementById('heroRefreshLabel')?.addEventListener('click', function(e) {
   e.stopPropagation();
+  if(typeof domainMode !== 'undefined' && domainMode) toggleDomainMode();
   loadHeroImage();
+});
+
+// ====== Domain Skill Tree ======
+var domainMode = false;
+var domainTreeData = null;
+
+// Zoom/pan state
+var dZoom = 1, dPanX = 0, dPanY = 0;
+var dPanning = false, dPanStartX = 0, dPanStartY = 0;
+
+function applyDomainTransform() {
+  var inner = document.getElementById('domainTreeInner');
+  if(inner) inner.style.transform = 'translate('+dPanX+'px,'+dPanY+'px) scale('+dZoom+')';
+  var pctEl = document.getElementById('domainZoomPct');
+  if(pctEl) pctEl.textContent = Math.round(dZoom * 100) + '%';
+}
+
+function resetDomainView() {
+  dZoom = 1; dPanX = 0; dPanY = 0;
+  applyDomainTransform();
+}
+
+// Setup zoom/pan (called once on first domainMode enter)
+var _domainZoomSetup = false;
+function setupDomainZoom() {
+  if(_domainZoomSetup) return;
+  _domainZoomSetup = true;
+  var overlay = document.getElementById('domainTreeOverlay');
+  if(!overlay) return;
+
+  // Ctrl/Cmd + wheel → zoom (on document for reliable capture)
+  document.addEventListener('wheel', function(e) {
+    if(!domainMode) return;
+    if(!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+    dZoom = Math.round(Math.max(0.3, Math.min(3, dZoom + delta)) * 100) / 100;
+    applyDomainTransform();
+  }, { passive: false });
+
+  // Middle-button drag → pan (on overlay)
+  overlay.addEventListener('mousedown', function(e) {
+    if(!domainMode) return;
+    if(e.button !== 1) return;
+    e.preventDefault();
+    dPanning = true;
+    dPanStartX = e.clientX - dPanX;
+    dPanStartY = e.clientY - dPanY;
+    overlay.style.cursor = 'grabbing';
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if(!dPanning || !domainMode) return;
+    dPanX = e.clientX - dPanStartX;
+    dPanY = e.clientY - dPanStartY;
+    applyDomainTransform();
+  });
+
+  document.addEventListener('mouseup', function(e) {
+    if(!dPanning) return;
+    dPanning = false;
+    var overlay = document.getElementById('domainTreeOverlay');
+    if(overlay) overlay.style.cursor = '';
+  });
+
+  // Reset button
+  var resetBtn = document.getElementById('domainResetBtn');
+  if(resetBtn) {
+    resetBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      resetDomainView();
+    });
+  }
+
+  // Watch theme changes → re-render domain tree
+  var themeObserver = new MutationObserver(function() {
+    if(domainMode && window._domainTreeCache) {
+      renderDomainTree(window._domainTreeCache);
+    }
+  });
+  themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
+
+function toggleDomainMode() {
+  var overlay = document.getElementById('domainTreeOverlay');
+  var heroImg = document.getElementById('heroImage');
+  var domainLabel = document.getElementById('heroDomainLabel');
+  if(!overlay || !heroImg) return;
+  if(!domainMode) {
+    domainMode = true;
+    setupDomainZoom();
+    // Show zoom controls
+    var zc = document.getElementById('domainZoomCtrl');
+    if(zc) zc.style.display = 'flex';
+    if(domainLabel) domainLabel.classList.add('active');
+    heroImg.style.backgroundImage = 'none';
+    heroImg.style.backgroundColor = document.body.classList.contains('theme-dark') ? '#1e1e1e' : '#fff';
+    // Expand container to fit the skill tree (cy + r3out + margin)
+    var _expandH = 830;
+    heroImg.style.minHeight = _expandH + 'px';
+    var heroRight = heroImg.parentElement;
+    if(heroRight) heroRight.style.minHeight = _expandH + 'px';
+    if(domainTreeData) {
+      renderDomainTree(domainTreeData);
+    } else {
+      renderDomainTreeLoading();
+      if(typeof window.__IFTO_getDomainTree === 'function') {
+        var domainFolder = (window.__IFTO_SETTINGS && window.__IFTO_SETTINGS.domainFolder) || '300-领域AREA';
+        window.__IFTO_getDomainTree(domainFolder).then(function(data) {
+          domainTreeData = data;
+          window._domainTreeCache = data;
+          renderDomainTree(data);
+        }).catch(function(err) {
+          console.error('IFTO: bridge failed', err);
+          var inner = document.getElementById('domainTreeInner');
+          if(inner) inner.innerHTML = '<div class="dt-empty">加载失败: '+escHtml(String(err))+'</div>';
+        });
+      } else {
+        var inner = document.getElementById('domainTreeInner');
+        if(inner) inner.innerHTML = '<div class="dt-empty">Bridge 未就绪，请重载插件</div>';
+      }
+    }
+  } else {
+    domainMode = false;
+    if(domainLabel) domainLabel.classList.remove('active');
+    overlay.style.display = 'none';
+    var zc = document.getElementById('domainZoomCtrl');
+    if(zc) zc.style.display = 'none';
+    heroImg.style.backgroundImage = '';
+    heroImg.style.backgroundColor = '';
+    heroImg.style.minHeight = '';
+    var heroRight = heroImg.parentElement;
+    if(heroRight) heroRight.style.minHeight = '';
+    loadHeroImage();
+  }
+}
+
+function renderDomainTreeLoading() {
+  var overlay = document.getElementById('domainTreeOverlay');
+  var inner = document.getElementById('domainTreeInner');
+  if(!overlay || !inner) return;
+  inner.innerHTML = '<div class="domain-tree-loading">加载领域数据中…</div>';
+  overlay.style.display = 'block';
+}
+
+function renderDomainTree(treeData) {
+  var overlay = document.getElementById('domainTreeOverlay');
+  var inner = document.getElementById('domainTreeInner');
+  if(!overlay || !inner) return;
+  overlay.style.display = 'block';
+  if(!treeData || treeData.length === 0) {
+    inner.innerHTML = '<div class="dt-empty">暂无领域数据</div>';
+    return;
+  }
+  try {
+  var oRect = overlay.getBoundingClientRect();
+  var W = oRect.width, H = oRect.height;
+  if(W < 100) W = 800; if(H < 100) H = 600;
+  var cx = W / 2, cy = H / 2;
+
+  var dark = document.body.classList.contains('theme-dark');
+  // Force overlay background — use backgroundColor to beat CSS background shorthand
+  overlay.style.backgroundColor = dark ? '#1e1e1e' : '#fff';
+  var accent = dark ? '#fff' : '#111';
+  var bg = dark ? '#1e1e1e' : '#fff';
+  var textColor = dark ? '#e8e8e8' : '#111';
+  var text2 = dark ? '#aaa' : '#666';
+  var lineColor = dark ? '#444' : '#d4d4d4';
+
+  function sectorPath(cx, cy, r1, r2, a1, a2) {
+    var large = (a2 - a1) > Math.PI ? 1 : 0;
+    var x1o = cx + r2 * Math.cos(a1), y1o = cy + r2 * Math.sin(a1);
+    var x2o = cx + r2 * Math.cos(a2), y2o = cy + r2 * Math.sin(a2);
+    var x1i = cx + r1 * Math.cos(a1), y1i = cy + r1 * Math.sin(a1);
+    var x2i = cx + r1 * Math.cos(a2), y2i = cy + r1 * Math.sin(a2);
+    return 'M '+x1o+' '+y1o+' A '+r2+' '+r2+' 0 '+large+' 1 '+x2o+' '+y2o+
+           ' L '+x2i+' '+y2i+' A '+r1+' '+r1+' 0 '+large+' 0 '+x1i+' '+y1i+' Z';
+  }
+
+  if(!window._stExpanded) window._stExpanded = {};
+  var sectorColors = dark
+    ? ['rgba(255,255,255,0.55)','rgba(255,255,255,0.35)','rgba(255,255,255,0.2)']
+    : ['rgba(0,0,0,0.45)','rgba(0,0,0,0.28)','rgba(0,0,0,0.13)'];
+  var lightColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.035)';
+
+  var donutInner = 55, donutOuter = 180;
+  var r2in = donutOuter + 18, r2out = donutOuter + 65;
+  var r3in = r2out + 8, r3out = r2out + 50;
+  // Auto-scale: ensure r3out fits within the container
+  var maxR = r3out + 10;
+  var baseR3out = r3out;
+  var _scale = maxR / baseR3out;
+  var n = treeData.length;
+  var sectorAngle = 2 * Math.PI / n;
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" style="position:absolute;top:0;left:0;width:'+W+'px;height:'+H+'px;z-index:1">';
+  var labelDivs = '';
+  var arcDefs = '';
+  var arcIdCounter = 0;
+  function arcTextPath(r, a1, a2, midA) {
+    var top = Math.sin(midA) < 0.5;
+    var startA = top ? a1 : a2;
+    var endA = top ? a2 : a1;
+    var sx = cx + r * Math.cos(startA);
+    var sy = cy + r * Math.sin(startA);
+    var ex = cx + r * Math.cos(endA);
+    var ey = cy + r * Math.sin(endA);
+    var sweep = top ? 1 : 0;
+    var id = 'ap' + (arcIdCounter++);
+    var d = 'M ' + sx + ' ' + sy + ' A ' + r + ' ' + r + ' 0 0 ' + sweep + ' ' + ex + ' ' + ey;
+    arcDefs += '<path id="'+id+'" d="'+d+'" fill="none" stroke="none"/>';
+    return id;
+  }
+
+  // === Ring 1: major sectors ===
+  for(var i = 0; i < n; i++) {
+    var branch = treeData[i];
+    var pct = branch.totalTasks > 0 ? Math.round(branch.completedTasks / branch.totalTasks * 100) : 0;
+    var a1 = -Math.PI/2 + i * sectorAngle;
+    var a2 = a1 + sectorAngle;
+    var fillR = donutInner + (donutOuter - donutInner) * Math.max(0.04, pct / 100);
+    var color = sectorColors[i];
+
+    svg += '<path d="'+sectorPath(cx, cy, donutInner, donutOuter, a1, a2)+'" fill="'+lightColor+'" stroke="'+lineColor+'" stroke-width="1.5"/>';
+    svg += '<path d="'+sectorPath(cx, cy, donutInner, fillR, a1, a2)+'" fill="'+color+'"/>';
+    svg += '<path class="st-sector" data-path="'+escHtml(branch.path||'')+'" data-ring="1" d="'+sectorPath(cx, cy, donutInner, donutOuter, a1, a2)+'" fill="transparent" stroke="none" style="cursor:pointer"><title>'+escHtml(branch.name)+'</title></path>';
+
+    var midA = (a1 + a2) / 2;
+    var labelR = donutInner + (donutOuter - donutInner) * 0.55;
+    var lx = cx + labelR * Math.cos(midA);
+    var ly = cy + labelR * Math.sin(midA);
+    var lw = labelR * sectorAngle * 0.78;
+    labelDivs += '<div style="position:absolute;left:'+(lx-lw/2)+'px;top:'+(ly-22)+'px;width:'+lw+'px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:2;text-align:center;line-height:1.3;overflow:hidden">';
+    labelDivs += '<span style="font-size:13px;font-weight:700;color:'+textColor+';word-break:break-all">'+escHtml(branch.name)+'</span>';
+    labelDivs += '<span style="font-size:10px;color:'+text2+'">'+pct+'% \u00b7 '+branch.fileCount+'文件</span>';
+    labelDivs += '</div>';
+  }
+
+  // === Center ===
+  svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+donutInner+'" fill="'+bg+'" stroke="'+accent+'" stroke-width="2"/>';
+  svg += '<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="15" font-weight="700" fill="'+textColor+'" style="pointer-events:none">领域</text>';
+  svg += '<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" font-size="11" fill="'+text2+'" style="pointer-events:none">技能树</text>';
+
+  // === Ring 2: sub-folders + Ring 3: files ===
+  var activeSub = window._stActiveSub || null;
+
+  for(var ei = 0; ei < n; ei++) {
+    var eb = treeData[ei];
+    if(!window._stExpanded[eb.path || '']) continue;
+    var subs = eb.subfolders || [];
+    var ea1 = -Math.PI/2 + ei * sectorAngle;
+    var ea2 = ea1 + sectorAngle;
+    var childAngle = sectorAngle / Math.max(1, subs.length);
+
+    for(var sj = 0; sj < subs.length; sj++) {
+      var sub = subs[sj];
+      var subPct = sub.totalTasks > 0 ? Math.round(sub.completedTasks / sub.totalTasks * 100) : 0;
+      var sa1 = ea1 + sj * childAngle + childAngle * 0.05;
+      var sa2 = ea1 + (sj + 1) * childAngle - childAngle * 0.05;
+      var subFillR = r2in + (r2out - r2in) * Math.max(0.04, subPct / 100);
+      var isActiveSub = (activeSub === sub.path);
+
+      svg += '<path d="'+sectorPath(cx, cy, r2in, r2out, sa1, sa2)+'" fill="'+lightColor+'" stroke="'+lineColor+'" stroke-width="1"/>';
+      svg += '<path d="'+sectorPath(cx, cy, r2in, subFillR, sa1, sa2)+'" fill="'+color+'"/>';
+      svg += '<path class="st-sector" data-path="'+escHtml(sub.path||'')+'" data-ring="2" d="'+sectorPath(cx, cy, r2in, r2out, sa1, sa2)+'" fill="transparent" stroke="none" style="cursor:pointer"><title>'+escHtml(sub.name)+'</title></path>';
+
+      var smid = (sa1 + sa2) / 2;
+      var slR = r2in + (r2out - r2in) * 0.5;
+      var sPathId = arcTextPath(slR, sa1, sa2, smid);
+      var sPathId2 = arcTextPath(slR - 12, sa1, sa2, smid);
+      svg += '<text style="pointer-events:none"><textPath href="#'+sPathId+'" startOffset="50%" text-anchor="middle" fill="'+textColor+'" font-size="9" font-weight="600">'+escHtml(sub.name)+'</textPath></text>';
+      svg += '<text style="pointer-events:none"><textPath href="#'+sPathId2+'" startOffset="50%" text-anchor="middle" fill="'+text2+'" font-size="8">'+subPct+'% \u00b7 '+sub.fileCount+'</textPath></text>';
+
+      // === Ring 3: only the active sub-folder's children ===
+      if(isActiveSub) {
+        var items = [];
+        // Deeper sub-folders first
+        var deeperSubs = sub.subfolders || [];
+        for(var ds = 0; ds < deeperSubs.length; ds++) {
+          items.push({ name: deeperSubs[ds].name, path: deeperSubs[ds].path, leaf: false, total: deeperSubs[ds].totalTasks||0, done: deeperSubs[ds].completedTasks||0, fileCount: deeperSubs[ds].fileCount||0 });
+        }
+        // Then files
+        var fls = sub.files || [];
+        for(var fi = 0; fi < fls.length; fi++) {
+          var f = fls[fi];
+          var fname = (f.name || f.path || '').split('/').pop().replace(/\.md$/i, '');
+          items.push({ name: fname, path: f.path, leaf: true, total: f.totalTasks||0, done: f.completedTasks||0, fileCount: 0 });
+        }
+        var itemCount = items.length;
+        // Wider spread for Ring 3: use at least 50% of parent Ring 1 sector
+        var midAngle = (sa1 + sa2) / 2;
+        var spreadAngle = Math.max(sa2 - sa1, sectorAngle * 0.5);
+        var r3a1 = midAngle - spreadAngle / 2;
+        for(var ii = 0; ii < itemCount; ii++) {
+          var item = items[ii];
+          var ia1 = r3a1 + ii * (spreadAngle / itemCount) + (spreadAngle / itemCount) * 0.05;
+          var ia2 = r3a1 + (ii + 1) * (spreadAngle / itemCount) - (spreadAngle / itemCount) * 0.05;
+          var ipct = item.total > 0 ? Math.round(item.done / item.total * 100) : 0;
+          var ifillR = r3in + (r3out - r3in) * Math.max(0.04, ipct / 100);
+
+          svg += '<path d="'+sectorPath(cx, cy, r3in, r3out, ia1, ia2)+'" fill="'+lightColor+'" stroke="'+lineColor+'" stroke-width="0.5"/>';
+          if(item.total > 0) {
+            svg += '<path d="'+sectorPath(cx, cy, r3in, ifillR, ia1, ia2)+'" fill="'+color+'"/>';
+          }
+          svg += '<path class="st-sector" data-path="'+escHtml(item.path||'')+'"'+(item.leaf?' data-leaf="1"':'')+' data-ring="3" d="'+sectorPath(cx, cy, r3in, r3out, ia1, ia2)+'" fill="transparent" stroke="none" style="cursor:pointer"><title>'+escHtml(item.name+(item.total>0?' '+Math.round(item.done/item.total*100)+'%':''))+'</title></path>';
+
+          var imid = (ia1 + ia2) / 2;
+          var ilR = r3in + (r3out - r3in) * 0.5;
+          var iPathId = arcTextPath(ilR, ia1, ia2, imid);
+          var fullName = item.name + (item.total > 0 ? ' ' + ipct + '%' : '');
+          svg += '<text style="pointer-events:none"><textPath href="#'+iPathId+'" startOffset="50%" text-anchor="middle" fill="'+text2+'" font-size="8">'+escHtml(fullName)+'</textPath></text>';
+        }
+      }
+    }
+  }
+
+  svg += '<defs>' + arcDefs + '</defs>';
+  svg += '</svg>';
+  inner.style.position = 'absolute';
+  inner.style.top = '0px';
+  inner.style.left = '0px';
+  inner.style.width = W + 'px';
+  inner.style.height = H + 'px';
+  inner.innerHTML = svg + labelDivs;
+  applyDomainTransform();
+
+  var sectors = inner.querySelectorAll('.st-sector');
+  for(var k = 0; k < sectors.length; k++) {
+    sectors[k].addEventListener('click', function(e) {
+      e.stopPropagation();
+      var path = this.getAttribute('data-path');
+      var ring = this.getAttribute('data-ring');
+      if(this.getAttribute('data-leaf') === '1' && path) {
+        if(typeof window.__IFTO_openFile === 'function') window.__IFTO_openFile(path);
+        return;
+      }
+      if(!path) return;
+      if(ring === '2') {
+        // Single expand: only one Ring 2 active at a time
+        window._stActiveSub = (window._stActiveSub === path) ? null : path;
+      } else {
+        // Ring 1 toggle
+        window._stExpanded[path] = window._stExpanded[path] ? false : true;
+      }
+      renderDomainTree(window._domainTreeCache || treeData);
+    });
+  }
+  } catch(err) {
+    inner.innerHTML = '<div class="dt-empty">渲染出错: '+escHtml(String(err))+'</div>';
+    console.error('IFTO: renderDomainTree error', err);
+  }
+}
+
+// Click "领域" to toggle domain skill tree
+document.getElementById('heroDomainLabel')?.addEventListener('click', function(e) {
+  e.stopPropagation();
+  toggleDomainMode();
 });
 
 // Nav active state
