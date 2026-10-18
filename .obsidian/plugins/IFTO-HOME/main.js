@@ -67,18 +67,17 @@ var DEFAULT_SETTINGS = {
   ollamaUrl: "http://localhost:11434",
   ragflowUrl: "http://localhost:9380",
   minimaxApiUrl: "https://www.minimaxi.com/v1/token_plan/remains",
-  widgetOrder: "deepseek,minimax,calendar,habits,ollama,ragflow,weeknotes,todotoday",
+  widgetOrder: "deepseek,minimax,calendar,habits,weeknotes,todotoday",
   widgetDeepseekEnabled: true,
   widgetCalendarEnabled: true,
   widgetHabitsEnabled: true,
-  widgetOllamaEnabled: true,
-  widgetRagflowEnabled: true,
   widgetWeeknotesEnabled: true,
   widgetTodotodayEnabled: true,
   widgetMinimaxEnabled: true,
   widgetWeeknotesPath: '',
   widgetTodotodoPath: '',
   domainFolder: '300-领域AREA',
+  pinnedAreas: [],
   zoom: 1,
   bgColor: '',
   borderRadius: 8,
@@ -104,6 +103,21 @@ var IFTOView = class extends import_obsidian.ItemView {
     this.containerEl.addClass("ifto-container");
     this.containerEl.style.height = "100%";
     this.containerEl.style.overflow = "auto";
+    this.isActive = false;
+    window.__IFTO_leafActive = () => !!this.isActive;
+    // When the IFTO-HOME leaf becomes the active one (e.g. after switching
+    // back to this tab in Obsidian), restore focus to the last-focused input.
+    // home.js tracks that input and exposes window.__IFTO_restoreFocus; the
+    // delayed retries win the race against Obsidian's own focus management.
+    this.registerEvent(this.app.workspace.on("active-leaf-change", (leaf) => {
+      const act = !!leaf && leaf.view === this;
+      this.isActive = act;
+      if (act && typeof window.__IFTO_restoreFocus === "function") {
+        setTimeout(() => { window.__IFTO_restoreFocus(); }, 0);
+        setTimeout(() => { window.__IFTO_restoreFocus(); }, 60);
+        setTimeout(() => { window.__IFTO_restoreFocus(); }, 200);
+      }
+    }));
     try {
       window.__IFTO_SETTINGS = {
         heroImageUrl: this.plugin.settings.heroImageUrl,
@@ -205,6 +219,68 @@ var IFTOView = class extends import_obsidian.ItemView {
         setTimeout(focusTarget, 30);
         setTimeout(focusTarget, 100);
         setTimeout(focusTarget, 250);
+      };
+      // Renderer-side equivalent of the "blur then focus" Electron focus-repair
+      // trick. The main-process ipcMain solution from most tutorials isn't
+      // reachable from an Obsidian plugin (it runs in the renderer), but we can
+      // still grab the OS window via electron remote / BrowserWindow.
+      const iftoGetWindow = () => {
+        try {
+          const electron = require("electron");
+          if (electron && electron.remote && electron.remote.getCurrentWindow) return electron.remote.getCurrentWindow();
+          if (electron && electron.BrowserWindow) {
+            if (electron.BrowserWindow.getFocusedWindow) { const w = electron.BrowserWindow.getFocusedWindow(); if (w) return w; }
+            if (electron.BrowserWindow.getAllWindows && electron.BrowserWindow.getAllWindows().length) return electron.BrowserWindow.getAllWindows()[0];
+          }
+        } catch (e) { /* ignore */ }
+        try {
+          const remote = require("@electron/remote");
+          if (remote && remote.getCurrentWindow) return remote.getCurrentWindow();
+        } catch (e) { /* ignore */ }
+        return null;
+      };
+      window.__IFTO_refocusWindow = () => {
+        const win = iftoGetWindow();
+        if (!win) return false;
+        try {
+          if (typeof win.blur === "function") win.blur();
+          if (typeof win.focus === "function") win.focus();
+          return true;
+        } catch (e) { return false; }
+      };
+      // Auto-repair (tutorial solution #3): when the OS window regains focus and
+      // the IFTO-HOME view is active, run one blur/focus cycle to unstick
+      // keyboard focus. Guarded so it cannot recurse (inner blur suppressed).
+      try {
+        const _fixWin = iftoGetWindow();
+        if (_fixWin && _fixWin.on) {
+          let _needsFix = false, _suppress = false;
+          _fixWin.on("blur", () => { if (_suppress) return; _needsFix = true; });
+          _fixWin.on("focus", () => {
+            if (!_needsFix) return;
+            _needsFix = false;
+            if (_suppress) return;
+            if (!(window.__IFTO_leafActive && window.__IFTO_leafActive())) return;
+            _suppress = true;
+            setTimeout(() => {
+              try { if (typeof _fixWin.blur === "function") _fixWin.blur(); } catch (e) {}
+              setTimeout(() => {
+                try { if (typeof _fixWin.focus === "function") _fixWin.focus(); } catch (e) {}
+                setTimeout(() => { _suppress = false; }, 60);
+              }, 30);
+            }, 100);
+          });
+        }
+      } catch (e) { /* ignore */ }
+      window.__IFTO_togglePin = async (path) => {
+        try {
+          const s = this.plugin.settings;
+          if (!Array.isArray(s.pinnedAreas)) s.pinnedAreas = [];
+          const i = s.pinnedAreas.indexOf(path);
+          if (i >= 0) s.pinnedAreas.splice(i, 1); else s.pinnedAreas.push(path);
+          await this.plugin.saveSettings();
+          return i < 0;
+        } catch (e) { console.error("IFTO: togglePin error", e); return false; }
       };
       window.__IFTO_listFiles = async (folder) => {
         try {
@@ -796,12 +872,13 @@ var IFTOView = class extends import_obsidian.ItemView {
       };
       window.__IFTO_getDomainTree = async (folder) => {
         var stripPrefix = function(n) { return n.replace(/^\d+-/, ''); };
+        var _pins = this.plugin.settings.pinnedAreas || [];
         var buildTree = async (dir) => {
           try {
             var adapter = this.app.vault.adapter;
             var result = await adapter.list(dir);
             var files = [];
-            var totalTasks = 0, completedTasks = 0;
+            var totalTasks = 0, completedTasks = 0, maxMtime = 0, progSum = 0, progW = 0;
             for (var _i = 0; _i < (result.files || []).length; _i++) {
               var f = result.files[_i];
               if (!f.endsWith('.md')) continue;
@@ -816,17 +893,39 @@ var IFTOView = class extends import_obsidian.ItemView {
                   if (kv) fm[kv[1].trim()] = kv[2].trim().replace(/^['"]|['"]$/g, '');
                 });
               }
-              var taskMatches = content.match(/- \[( |x)\]/g);
+              var taskMatches = content.match(/- \[( |x|\/)\]/g);
               var total = taskMatches ? taskMatches.length : 0;
-              var done = taskMatches ? taskMatches.filter(function(t) { return t === '- [x]'; }).length : 0;
+              var done = 0, score = 0;
+              if (taskMatches) {
+                for (var _t = 0; _t < taskMatches.length; _t++) {
+                  if (taskMatches[_t] === '- [x]') { done++; score += 1; }
+                  else if (taskMatches[_t] === '- [/]') { score += 0.5; }
+                }
+              }
+              var status = fm['status'] || '';
+              var weight = parseFloat(fm['weight']) || 1;
+              var progRaw = (fm['progress'] || '').trim();
+              var progress = null;
+              if (/^\d+(\.\d+)?$/.test(progRaw)) progress = Math.round(parseFloat(progRaw));
+              else if (total > 0) progress = Math.round(score / total * 100);
+              else if (status === '已达成' || status === '完成' || status === '已完成') progress = 100;
+              else if (status === '未开始') progress = 0;
+              if (progress !== null) { progSum += progress * weight; progW += weight; }
               totalTasks += total;
               completedTasks += done;
+              var _st = null;
+              try { _st = await adapter.stat(f); } catch (e) {}
+              var _mt = (_st && _st.mtime) ? _st.mtime : 0;
+              if (_mt > maxMtime) maxMtime = _mt;
               files.push({
                 name: fname, path: f,
                 title: fm['title'] || fname.replace('.md', ''),
                 description: fm['description'] || '',
                 tags: fm['tags'] || '',
+                status: status, progress: progress, weight: weight,
                 totalTasks: total, completedTasks: done,
+                pinned: _pins.indexOf(f) >= 0,
+                mtime: _mt,
               });
             }
             var subfolders = [];
@@ -836,6 +935,8 @@ var IFTOView = class extends import_obsidian.ItemView {
               if (subInfo) {
                 totalTasks += subInfo.totalTasks;
                 completedTasks += subInfo.completedTasks;
+                if (subInfo.mtime && subInfo.mtime > maxMtime) maxMtime = subInfo.mtime;
+                if (subInfo.progress !== null && subInfo.progress !== undefined) { progSum += subInfo.progress; progW += 1; }
                 subfolders.push(subInfo);
               }
             }
@@ -845,6 +946,9 @@ var IFTOView = class extends import_obsidian.ItemView {
               files: files, subfolders: subfolders,
               fileCount: files.length,
               totalTasks: totalTasks, completedTasks: completedTasks,
+              progress: progW > 0 ? Math.round(progSum / progW) : null,
+              pinned: _pins.indexOf(dir) >= 0,
+              mtime: maxMtime,
             };
           } catch (e) { return null; }
         };
@@ -891,6 +995,14 @@ var IFTOView = class extends import_obsidian.ItemView {
           bookFolder: this.plugin.settings.bookFolder,
           paperFolder: this.plugin.settings.paperFolder,
           resourceRoot: this.plugin.settings.resourceRoot,
+          shortcutCollectPath: this.plugin.settings.shortcutCollectPath,
+          shortcutTodoPath: this.plugin.settings.shortcutTodoPath,
+          shortcutTaskPath: this.plugin.settings.shortcutTaskPath,
+          shortcutNotePath: this.plugin.settings.shortcutNotePath,
+          shortcutCollectTemplate: this.plugin.settings.shortcutCollectTemplate,
+          shortcutTodoTemplate: this.plugin.settings.shortcutTodoTemplate,
+          shortcutTaskTemplate: this.plugin.settings.shortcutTaskTemplate,
+          shortcutNoteTemplate: this.plugin.settings.shortcutNoteTemplate,
           projectTaskTemplate: this.plugin.settings.projectTaskTemplate,
           ollamaUrl: this.plugin.settings.ollamaUrl,
           ragflowUrl: this.plugin.settings.ragflowUrl,
@@ -1063,6 +1175,14 @@ var IFTOView = class extends import_obsidian.ItemView {
         try { if (typeof window[fn] === "function") window[fn](); }
         catch(e) { /* ignore */ }
       };
+      // Live-refresh the 领域 dashboard when anything under its folder changes,
+      // so edited titles / progress show up without reopening the panel.
+      const iftoDomainFolder = () => this.plugin.settings.domainFolder || "300-\u9886\u57DFAREA";
+      let __iftoDomainTimer = null;
+      const refreshDomain = () => {
+        if (__iftoDomainTimer) clearTimeout(__iftoDomainTimer);
+        __iftoDomainTimer = setTimeout(() => { __iftoDomainTimer = null; tryRefresh("__IFTO_refreshDomainTree"); }, 300);
+      };
       this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
         const pBase = this.plugin.settings.projectBase;
         const actFolder = this.plugin.settings.activityFolder;
@@ -1071,6 +1191,7 @@ var IFTOView = class extends import_obsidian.ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const newPath = file.path;
+        if (iftoDomainFolder() && ((newPath && newPath.startsWith(iftoDomainFolder())) || (oldPath && oldPath.startsWith(iftoDomainFolder())))) refreshDomain();
         if (pBase && (newPath.startsWith(pBase) || oldPath && oldPath.startsWith(pBase))) tryRefresh("renderProject");
         if (actFolder && (newPath.startsWith(actFolder) || oldPath && oldPath.startsWith(actFolder))) tryRefresh("renderActivity");
         if (todoFolder && (newPath.startsWith(todoFolder) || oldPath && oldPath.startsWith(todoFolder))) tryRefresh("renderTodo");
@@ -1085,6 +1206,7 @@ var IFTOView = class extends import_obsidian.ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const newPath = file.path;
+        if (iftoDomainFolder() && newPath.startsWith(iftoDomainFolder())) refreshDomain();
         if (pBase && newPath.startsWith(pBase)) tryRefresh("renderProject");
         if (actFolder && newPath.startsWith(actFolder)) tryRefresh("renderActivity");
         if (inboxFolder && newPath.startsWith(inboxFolder)) tryRefresh("renderInbox");
@@ -1096,6 +1218,7 @@ var IFTOView = class extends import_obsidian.ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const pBase = this.plugin.settings.projectBase;
+        if (iftoDomainFolder() && file.path.startsWith(iftoDomainFolder())) refreshDomain();
         if (inboxFolder && file.path.startsWith(inboxFolder)) tryRefresh("renderInbox");
         if (bookFolder && file.path.startsWith(bookFolder)) tryRefresh("renderNote");
         if (paperFolder && file.path.startsWith(paperFolder)) tryRefresh("renderNote");
@@ -1106,6 +1229,7 @@ var IFTOView = class extends import_obsidian.ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const pBase = this.plugin.settings.projectBase;
+        if (iftoDomainFolder() && file.path.startsWith(iftoDomainFolder())) refreshDomain();
         if (bookFolder && file.path.startsWith(bookFolder)) tryRefresh("renderNote");
         if (paperFolder && file.path.startsWith(paperFolder)) tryRefresh("renderNote");
         if (pBase && file.path.startsWith(pBase)) {
@@ -1380,8 +1504,6 @@ var IFTOSettingsTab = class extends import_obsidian.PluginSettingTab {
       {id:'minimax', label:'MiniMax Token'},
       {id:'calendar', label:'日历'},
       {id:'habits', label:'习惯打卡'},
-      {id:'ollama', label:'Ollama 连通检测'},
-      {id:'ragflow', label:'Ragflow 连通检测'},
       {id:'weeknotes', label:'本周笔记'},
       {id:'todotoday', label:'今日待办'}
     ];
@@ -1580,16 +1702,6 @@ new import_obsidian.Setting(settingsRoot).setName('本周笔记路径').setDesc(
     }));
     new import_obsidian.Setting(settingsRoot).setName("整理-资源根目录").setDesc("整理杂项中显示的文件夹根目录路径").addText((text) => text.setPlaceholder("400-资源RESOURCE").setValue(this.plugin.settings.resourceRoot).onChange(async (value) => {
       this.plugin.settings.resourceRoot = value.trim();
-      await this.plugin.saveSettings();
-    }));
-
-    settingsRoot.createEl('h3', { text: '服务连接' });
-    new import_obsidian.Setting(settingsRoot).setName("Ollama 地址").setDesc("本地 Ollama 服务地址，用于连通性检测").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaUrl).onChange(async (value) => {
-      this.plugin.settings.ollamaUrl = value.trim();
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(settingsRoot).setName("Ragflow 地址").setDesc("Ragflow 服务地址，用于连通性检测").addText((text) => text.setPlaceholder("http://localhost:9380").setValue(this.plugin.settings.ragflowUrl).onChange(async (value) => {
-      this.plugin.settings.ragflowUrl = value.trim();
       await this.plugin.saveSettings();
     }));
   }

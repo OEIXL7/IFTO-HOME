@@ -79,11 +79,12 @@ const DEFAULT_SETTINGS: IFTOPluginSettings = {
   paperFolder: '400-资源RESOURCE/420-览阅/422-论文',
   resourceRoot: '400-资源RESOURCE',
   domainFolder: '300-领域AREA',
+  pinnedAreas: [],
   projectTaskTemplate: '',
   ollamaUrl: 'http://localhost:11434',
   ragflowUrl: 'http://localhost:9380',
   minimaxApiUrl: 'https://www.minimaxi.com/v1/token_plan/remains',
-  widgetOrder: 'deepseek,minimax,calendar,habits,ollama,ragflow,weeknotes,todotoday',
+  widgetOrder: 'deepseek,minimax,calendar,habits,weeknotes,todotoday',
   widgetDeepseekEnabled: true,
   widgetCalendarEnabled: true,
   widgetHabitsEnabled: true,
@@ -104,6 +105,7 @@ export const IFTO_VIEW_TYPE = 'ifto-homepage';
 
 export class IFTOView extends ItemView {
   private plugin: IFTOPlugin;
+  private isActive = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: IFTOPlugin) {
     super(leaf);
@@ -127,6 +129,22 @@ export class IFTOView extends ItemView {
     this.containerEl.addClass('ifto-container');
     this.containerEl.style.height = '100%';
     this.containerEl.style.overflow = 'auto';
+
+    this.isActive = false;
+    (window as any).__IFTO_leafActive = () => !!this.isActive;
+    // When the IFTO-HOME leaf becomes the active one (e.g. after switching
+    // back to this tab in Obsidian), restore focus to the last-focused input.
+    // home.js tracks that input and exposes window.__IFTO_restoreFocus; the
+    // delayed retries win the race against Obsidian's own focus management.
+    this.registerEvent(this.app.workspace.on('active-leaf-change', (leaf) => {
+      const act = !!leaf && (leaf as any).view === this;
+      this.isActive = act;
+      if (act && typeof (window as any).__IFTO_restoreFocus === 'function') {
+        setTimeout(() => { (window as any).__IFTO_restoreFocus(); }, 0);
+        setTimeout(() => { (window as any).__IFTO_restoreFocus(); }, 60);
+        setTimeout(() => { (window as any).__IFTO_restoreFocus(); }, 200);
+      }
+    }));
 
     try {
       // Expose settings to the frontend script
@@ -231,7 +249,70 @@ export class IFTOView extends ItemView {
         setTimeout(focusTarget, 250);
       };
 
+      // Renderer-side equivalent of the "blur then focus" Electron focus-repair
+      // trick. The main-process ipcMain solution from most tutorials isn't
+      // reachable from an Obsidian plugin (it runs in the renderer), but we can
+      // still grab the OS window via electron remote / BrowserWindow.
+      const iftoGetWindow = (): any => {
+        try {
+          const electron = require('electron');
+          if (electron && electron.remote && electron.remote.getCurrentWindow) return electron.remote.getCurrentWindow();
+          if (electron && electron.BrowserWindow) {
+            if (electron.BrowserWindow.getFocusedWindow) { const w = electron.BrowserWindow.getFocusedWindow(); if (w) return w; }
+            if (electron.BrowserWindow.getAllWindows && electron.BrowserWindow.getAllWindows().length) return electron.BrowserWindow.getAllWindows()[0];
+          }
+        } catch (e) { /* ignore */ }
+        try {
+          const remote = require('@electron/remote');
+          if (remote && remote.getCurrentWindow) return remote.getCurrentWindow();
+        } catch (e) { /* ignore */ }
+        return null;
+      };
+      (window as any).__IFTO_refocusWindow = () => {
+        const win = iftoGetWindow();
+        if (!win) return false;
+        try {
+          if (typeof win.blur === 'function') win.blur();
+          if (typeof win.focus === 'function') win.focus();
+          return true;
+        } catch (e) { return false; }
+      };
+      // Auto-repair (tutorial solution #3): when the OS window regains focus and
+      // the IFTO-HOME view is active, run one blur/focus cycle to unstick
+      // keyboard focus. Guarded so it cannot recurse (inner blur suppressed).
+      try {
+        const _fixWin = iftoGetWindow();
+        if (_fixWin && _fixWin.on) {
+          let _needsFix = false, _suppress = false;
+          _fixWin.on('blur', () => { if (_suppress) return; _needsFix = true; });
+          _fixWin.on('focus', () => {
+            if (!_needsFix) return;
+            _needsFix = false;
+            if (_suppress) return;
+            if (!((window as any).__IFTO_leafActive && (window as any).__IFTO_leafActive())) return;
+            _suppress = true;
+            setTimeout(() => {
+              try { if (typeof _fixWin.blur === 'function') _fixWin.blur(); } catch (e) { /* ignore */ }
+              setTimeout(() => {
+                try { if (typeof _fixWin.focus === 'function') _fixWin.focus(); } catch (e) { /* ignore */ }
+                setTimeout(() => { _suppress = false; }, 60);
+              }, 30);
+            }, 100);
+          });
+        }
+      } catch (e) { /* ignore */ }
+
       // Bridge for listing files in a folder (used by inbox tabs)
+      (window as any).__IFTO_togglePin = async (path: string): Promise<boolean> => {
+        try {
+          const s: any = this.plugin.settings;
+          if (!Array.isArray(s.pinnedAreas)) s.pinnedAreas = [];
+          const i = s.pinnedAreas.indexOf(path);
+          if (i >= 0) s.pinnedAreas.splice(i, 1); else s.pinnedAreas.push(path);
+          await this.plugin.saveSettings();
+          return i < 0;
+        } catch (e) { console.error('IFTO: togglePin error', e); return false; }
+      };
       (window as any).__IFTO_listFiles = async (folder: string): Promise<string[]> => {
         try {
           if (!await this.app.vault.adapter.exists(folder)) return [];
@@ -849,14 +930,15 @@ export class IFTOView extends ItemView {
       // with frontmatter + Kanban completion stats per file.
       (window as any).__IFTO_getDomainTree = async (folder: string): Promise<any[]> => {
         const stripPrefix = (name: string) => name.replace(/^\d+-/, '');
-        interface FileInfo { name: string; path: string; title: string; description: string; tags: string; totalTasks: number; completedTasks: number; }
-        interface FolderInfo { name: string; path: string; files: FileInfo[]; subfolders: FolderInfo[]; fileCount: number; totalTasks: number; completedTasks: number; }
+        const _pins = this.plugin.settings.pinnedAreas || [];
+        interface FileInfo { name: string; path: string; title: string; description: string; tags: string; status: string; progress: number | null; weight: number; totalTasks: number; completedTasks: number; pinned: boolean; mtime: number; }
+        interface FolderInfo { name: string; path: string; files: FileInfo[]; subfolders: FolderInfo[]; fileCount: number; totalTasks: number; completedTasks: number; progress: number | null; pinned: boolean; mtime: number; }
         const buildTree = async (dir: string): Promise<FolderInfo | null> => {
           try {
             const adapter = this.app.vault.adapter;
             const result = await adapter.list(dir);
             const files: FileInfo[] = [];
-            let totalTasks = 0, completedTasks = 0;
+            let totalTasks = 0, completedTasks = 0, maxMtime = 0, progSum = 0, progW = 0;
             for (const f of (result.files || [])) {
               if (!f.endsWith('.md')) continue;
               const fname = f.split('/').pop() || '';
@@ -870,17 +952,38 @@ export class IFTOView extends ItemView {
                   if (kv) fm[kv[1].trim()] = kv[2].trim().replace(/^['"]|['"]$/g, '');
                 });
               }
-              const taskMatches = content.match(/- \[( |x)\]/g);
+              const taskMatches = content.match(/- \[( |x|\/)\]/g);
               const total = taskMatches ? taskMatches.length : 0;
-              const done = taskMatches ? taskMatches.filter(t => t === '- [x]').length : 0;
+              let done = 0, score = 0;
+              if (taskMatches) {
+                for (const t of taskMatches) {
+                  if (t === '- [x]') { done++; score += 1; }
+                  else if (t === '- [/]') { score += 0.5; }
+                }
+              }
+              const status = fm['status'] || '';
+              const weight = parseFloat(fm['weight']) || 1;
+              const progRaw = (fm['progress'] || '').trim();
+              let progress: number | null = null;
+              if (/^\d+(\.\d+)?$/.test(progRaw)) progress = Math.round(parseFloat(progRaw));
+              else if (total > 0) progress = Math.round(score / total * 100);
+              else if (status === '已达成' || status === '完成' || status === '已完成') progress = 100;
+              else if (status === '未开始') progress = 0;
+              if (progress !== null) { progSum += progress * weight; progW += weight; }
               totalTasks += total;
               completedTasks += done;
+              let _mt = 0;
+              try { const _st = await adapter.stat(f); _mt = (_st && _st.mtime) ? _st.mtime : 0; } catch (e) { /* ignore */ }
+              if (_mt > maxMtime) maxMtime = _mt;
               files.push({
                 name: fname, path: f,
                 title: fm['title'] || fname.replace('.md', ''),
                 description: fm['description'] || '',
                 tags: fm['tags'] || '',
+                status, progress, weight,
                 totalTasks: total, completedTasks: done,
+                pinned: _pins.indexOf(f) >= 0,
+                mtime: _mt,
               });
             }
             const subfolders: FolderInfo[] = [];
@@ -889,6 +992,8 @@ export class IFTOView extends ItemView {
               if (subInfo) {
                 totalTasks += subInfo.totalTasks;
                 completedTasks += subInfo.completedTasks;
+                if (subInfo.mtime && subInfo.mtime > maxMtime) maxMtime = subInfo.mtime;
+                if (subInfo.progress !== null && subInfo.progress !== undefined) { progSum += subInfo.progress; progW += 1; }
                 subfolders.push(subInfo);
               }
             }
@@ -898,6 +1003,9 @@ export class IFTOView extends ItemView {
               files, subfolders,
               fileCount: files.length,
               totalTasks, completedTasks,
+              progress: progW > 0 ? Math.round(progSum / progW) : null,
+              pinned: _pins.indexOf(dir) >= 0,
+              mtime: maxMtime,
             };
           } catch (e) { return null; }
         };
@@ -1154,6 +1262,13 @@ export class IFTOView extends ItemView {
         try { if (typeof (window as any)[fn] === 'function') (window as any)[fn](...args); }
         catch(e) { /* ignore */ }
       };
+      // Live-refresh the 领域 dashboard when anything under its folder changes.
+      const iftoDomainFolder = () => this.plugin.settings.domainFolder || '300-领域AREA';
+      let __iftoDomainTimer: any = null;
+      const refreshDomain = () => {
+        if (__iftoDomainTimer) clearTimeout(__iftoDomainTimer);
+        __iftoDomainTimer = setTimeout(() => { __iftoDomainTimer = null; tryRefresh('__IFTO_refreshDomainTree'); }, 300);
+      };
       this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
         const pBase = this.plugin.settings.projectBase;
         const actFolder = this.plugin.settings.activityFolder;
@@ -1162,6 +1277,7 @@ export class IFTOView extends ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const newPath = file.path;
+        if (iftoDomainFolder() && ((newPath && newPath.startsWith(iftoDomainFolder())) || (oldPath && oldPath.startsWith(iftoDomainFolder())))) refreshDomain();
         if (pBase && (newPath.startsWith(pBase) || (oldPath && oldPath.startsWith(pBase)))) tryRefresh('renderProject');
         if (actFolder && (newPath.startsWith(actFolder) || (oldPath && oldPath.startsWith(actFolder)))) tryRefresh('renderActivity');
         if (todoFolder && (newPath.startsWith(todoFolder) || (oldPath && oldPath.startsWith(todoFolder)))) tryRefresh('renderTodo');
@@ -1176,6 +1292,7 @@ export class IFTOView extends ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const newPath = file.path;
+        if (iftoDomainFolder() && newPath.startsWith(iftoDomainFolder())) refreshDomain();
         if (pBase && newPath.startsWith(pBase)) tryRefresh('renderProject');
         if (actFolder && newPath.startsWith(actFolder)) tryRefresh('renderActivity');
         if (inboxFolder && newPath.startsWith(inboxFolder)) tryRefresh('renderInbox');
@@ -1187,6 +1304,7 @@ export class IFTOView extends ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const pBase = this.plugin.settings.projectBase;
+        if (iftoDomainFolder() && file.path.startsWith(iftoDomainFolder())) refreshDomain();
         if (inboxFolder && file.path.startsWith(inboxFolder)) tryRefresh('renderInbox');
         if (bookFolder && file.path.startsWith(bookFolder)) tryRefresh('renderNote');
         if (paperFolder && file.path.startsWith(paperFolder)) tryRefresh('renderNote');
@@ -1197,6 +1315,7 @@ export class IFTOView extends ItemView {
         const bookFolder = this.plugin.settings.bookFolder;
         const paperFolder = this.plugin.settings.paperFolder;
         const pBase = this.plugin.settings.projectBase;
+        if (iftoDomainFolder() && file.path.startsWith(iftoDomainFolder())) refreshDomain();
         if (bookFolder && file.path.startsWith(bookFolder)) tryRefresh('renderNote');
         if (paperFolder && file.path.startsWith(paperFolder)) tryRefresh('renderNote');
         if (pBase && file.path.startsWith(pBase)) {
@@ -1506,8 +1625,6 @@ class IFTOSettingsTab extends PluginSettingTab {
       { id: 'minimax', label: 'MiniMax Token' },
       { id: 'calendar', label: '日历' },
       { id: 'habits', label: '习惯打卡' },
-      { id: 'ollama', label: 'Ollama 连通检测' },
-      { id: 'ragflow', label: 'Ragflow 连通检测' },
       { id: 'weeknotes', label: '本周笔记' },
       { id: 'todotoday', label: '今日待办' },
     ];
@@ -1925,30 +2042,6 @@ class IFTOSettingsTab extends PluginSettingTab {
         .setValue(this.plugin.settings.resourceRoot)
         .onChange(async (value) => {
           this.plugin.settings.resourceRoot = value.trim();
-          await this.plugin.saveSettings();
-        }));
-
-    settingsRoot.createEl('h3', { text: '服务连接' });
-
-    new Setting(settingsRoot)
-      .setName('Ollama 地址')
-      .setDesc('本地 Ollama 服务地址，用于连通性检测')
-      .addText(text => text
-        .setPlaceholder('http://localhost:11434')
-        .setValue(this.plugin.settings.ollamaUrl)
-        .onChange(async (value) => {
-          this.plugin.settings.ollamaUrl = value.trim();
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(settingsRoot)
-      .setName('Ragflow 地址')
-      .setDesc('Ragflow 服务地址，用于连通性检测')
-      .addText(text => text
-        .setPlaceholder('http://localhost:9380')
-        .setValue(this.plugin.settings.ragflowUrl)
-        .onChange(async (value) => {
-          this.plugin.settings.ragflowUrl = value.trim();
           await this.plugin.saveSettings();
         }));
 

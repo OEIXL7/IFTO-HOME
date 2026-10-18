@@ -43,6 +43,52 @@ var inboxCards = [
     setTimeout(function(){ pinFocus(el); }, 100);
     setTimeout(function(){ pinFocus(el); }, 250);
   }, true);
+
+  // ====== Last-focused input tracking + focus restore ======
+  // Tracks the most recent IFTO editable element that had focus, so that when
+  // the user comes back to this tab (Obsidian tab switch) or the whole app
+  // window regains OS focus (Alt-Tab back), we can put the caret back
+  // automatically. This is the renderer-process equivalent of "blur/focus the
+  // window" — it fixes the focus-loss-without-caret problem without needing
+  // Electron main-process access (which Obsidian plugins don't have).
+  var lastIftoEditable = null;
+  document.addEventListener('focusin', function(e){
+    if(e.target && isIftoEditable(e.target)) lastIftoEditable = e.target;
+  }, true);
+
+  function restoreFocus(){
+    var target = (lastIftoEditable && document.body.contains(lastIftoEditable)) ? lastIftoEditable : null;
+    var doFocus = function(){
+      if(target && document.body.contains(target)){
+        try { target.focus({preventScroll:true}); } catch(_) {}
+        if(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement){
+          var len = target.value.length;
+          try { target.setSelectionRange(0, len); } catch(_) { try { target.select(); } catch(_){} }
+        }
+      } else {
+        var cont = document.querySelector('.ifto-container');
+        if(cont){ try { cont.focus({preventScroll:true}); } catch(_) {} }
+      }
+    };
+    doFocus();
+    if(typeof requestAnimationFrame === 'function') requestAnimationFrame(doFocus);
+    setTimeout(doFocus, 30);
+    setTimeout(doFocus, 100);
+    setTimeout(doFocus, 250);
+  }
+  window.__IFTO_restoreFocus = restoreFocus;
+
+  // When the Obsidian window regains OS focus (e.g. Alt-Tab back to Obsidian)
+  // and the IFTO-HOME leaf is the active one, restore the caret into the last
+  // focused input — replicating the manual "click away and back" workaround.
+  window.addEventListener('focus', function(){
+    try {
+      if(window.__IFTO_leafActive && window.__IFTO_leafActive()){
+        setTimeout(restoreFocus, 0);
+        setTimeout(restoreFocus, 60);
+      }
+    } catch(_) {}
+  });
 })();
 // ============================================================
 
@@ -965,12 +1011,7 @@ function focusInlineEditInput(input) {
   // with the dblclick, leaving Electron's window-focus state out of sync;
   // input.focus() then becomes a no-op until the OS sends a real focus event.
   try {
-    var er = window.require && window.require('electron');
-    if(er) {
-      var win = (er.remote && er.remote.getCurrentWindow && er.remote.getCurrentWindow())
-              || (er.getCurrentWindow && er.getCurrentWindow());
-      if(win && typeof win.focus === 'function') win.focus();
-    }
+    if (window.__IFTO_refocusWindow) window.__IFTO_refocusWindow();
   } catch(e) {}
 
   var focusInput = function(){
@@ -3077,12 +3118,12 @@ var _sn = document.getElementById('s-note');
 if(_sn){_sn.onclick = async function(e){
   e.preventDefault();
   var s = window.__IFTO_SETTINGS || {};
-  var folder = _getSCPath('notePath', 'shortcutNotePath', '010-信箱 INBOX/040-笔记');
+  var folder = _getSCPath('shortcutNotePath', 'notePath', '000-信箱INBOX/040-笔记');
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
   var content = '';
-  var tpl = s.noteTemplate || s.shortcutNoteTemplate;
+  var tpl = s.shortcutNoteTemplate || s.noteTemplate;
   if(tpl && window.__IFTO_readFile){
     content = (await window.__IFTO_readFile(tpl)) || '';
     if(content && window.__IFTO_processTemplate){
@@ -3245,8 +3286,6 @@ var widgetRenderers = {
   minimax: renderMinimaxPage,
   calendar: renderCalPage,
   habits: renderHabitPage,
-  ollama: renderOllamaPage,
-  ragflow: renderRagflowPage,
   weeknotes: renderWeekNotesPage,
   todotoday: renderTodoWidgetPage
 };
@@ -3255,14 +3294,12 @@ var widgetTitles = {
   minimax: 'MiniMax',
   calendar: '\u65E5\u5386',
   habits: '\u4E60\u60EF\u6253\u5361',
-  ollama: 'Ollama',
-  ragflow: 'Ragflow',
   weeknotes: '\u672C\u5468\u7B14\u8BB0',
   todotoday: '\u4ECA\u65E5\u5F85\u529E'
 };
 
 function getWidgetList() {
-  var order = (window.__IFTO_SETTINGS&&window.__IFTO_SETTINGS.widgetOrder) || 'deepseek,minimax,calendar,habits,ollama,ragflow,weeknotes,todotoday';
+  var order = (window.__IFTO_SETTINGS&&window.__IFTO_SETTINGS.widgetOrder) || 'deepseek,minimax,calendar,habits,weeknotes,todotoday';
   var ids = order.split(',').map(function(s){return s.trim()}).filter(function(s){return s});
   // Append any known widget renderer not present in saved order (forward-compat)
   Object.keys(widgetRenderers).forEach(function(k){
@@ -4120,7 +4157,7 @@ function renderHabitPage() {
   html += '</div>';
 
   if(habits.length === 0) {
-    html += '<div class="habit-empty">\u2728 \u8FD8\u6CA1\u6709\u4E60\u60EF<br>\u8F93\u5165\u540D\u79F0\u5F00\u59CB\u6DFB\u52A0\u5427</div>';
+    html += '<div class="habit-empty">\u8FD8\u6CA1\u6709\u4E60\u60EF<br>\u8F93\u5165\u540D\u79F0\u5F00\u59CB\u6DFB\u52A0\u5427</div>';
   } else {
     html += '<div class="habit-list">';
     var hi = curHabitIdx;
@@ -4497,8 +4534,9 @@ var dZoom = 1, dPanX = 0, dPanY = 0;
 var dPanning = false, dPanStartX = 0, dPanStartY = 0;
 
 function applyDomainTransform() {
-  var inner = document.getElementById('domainTreeInner');
-  if(inner) inner.style.transform = 'translate('+dPanX+'px,'+dPanY+'px) scale('+dZoom+')';
+  // Transform ONLY the sunburst graphic — the AREA领域 header stays fixed.
+  var sun = document.querySelector('#domainTreeInner .dt-sun');
+  if(sun) sun.style.transform = 'translate(' + dPanX + 'px,' + dPanY + 'px) scale(' + dZoom + ')';
   var pctEl = document.getElementById('domainZoomPct');
   if(pctEl) pctEl.textContent = Math.round(dZoom * 100) + '%';
 }
@@ -4516,10 +4554,14 @@ function setupDomainZoom() {
   var overlay = document.getElementById('domainTreeOverlay');
   if(!overlay) return;
 
-  // Ctrl/Cmd + wheel → zoom (on document for reliable capture)
+  // Wheel → zoom. In the sunburst view a plain wheel zooms (there is nothing
+  // to scroll); elsewhere Ctrl/Cmd + wheel zooms. Only while over the panel.
   document.addEventListener('wheel', function(e) {
     if(!domainMode) return;
-    if(!e.ctrlKey && !e.metaKey) return;
+    var sunView = (window._domainView === 'sun');
+    if(!sunView && !e.ctrlKey && !e.metaKey) return;
+    var ov = document.getElementById('domainTreeOverlay');
+    if(!ov || !e.target || !ov.contains(e.target)) return;
     e.preventDefault();
     var delta = e.deltaY > 0 ? -0.1 : 0.1;
     dZoom = Math.round(Math.max(0.3, Math.min(3, dZoom + delta)) * 100) / 100;
@@ -4578,37 +4620,27 @@ function toggleDomainMode() {
   if(!domainMode) {
     domainMode = true;
     setupDomainZoom();
-    // Show zoom controls
+    // Card dashboard needs no zoom/pan — keep controls hidden
     var zc = document.getElementById('domainZoomCtrl');
-    if(zc) zc.style.display = 'flex';
+    if(zc) zc.style.display = 'none';
+    // Always start from the overview level
+    window._domainNav = { stack: [] };
     if(domainLabel) domainLabel.classList.add('active');
     heroImg.style.backgroundImage = 'none';
-    heroImg.style.backgroundColor = document.body.classList.contains('theme-dark') ? '#1e1e1e' : '#fff';
-    // Expand container to fit the skill tree (cy + r3out + margin)
-    var _expandH = 830;
+    heroImg.style.backgroundColor = 'var(--ifto-bg, #fff)';
+    // Expand container to give the dashboard a comfortable height
+    var _expandH = (window.innerWidth < 700) ? 520 : 660;
     heroImg.style.minHeight = _expandH + 'px';
     var heroRight = heroImg.parentElement;
     if(heroRight) heroRight.style.minHeight = _expandH + 'px';
+    // Show cached data instantly (if any), then always refetch so recent
+    // edits to titles / progress are reflected.
     if(domainTreeData) {
       renderDomainTree(domainTreeData);
     } else {
       renderDomainTreeLoading();
-      if(typeof window.__IFTO_getDomainTree === 'function') {
-        var domainFolder = (window.__IFTO_SETTINGS && window.__IFTO_SETTINGS.domainFolder) || '300-领域AREA';
-        window.__IFTO_getDomainTree(domainFolder).then(function(data) {
-          domainTreeData = data;
-          window._domainTreeCache = data;
-          renderDomainTree(data);
-        }).catch(function(err) {
-          console.error('IFTO: bridge failed', err);
-          var inner = document.getElementById('domainTreeInner');
-          if(inner) inner.innerHTML = '<div class="dt-empty">加载失败: '+escHtml(String(err))+'</div>';
-        });
-      } else {
-        var inner = document.getElementById('domainTreeInner');
-        if(inner) inner.innerHTML = '<div class="dt-empty">Bridge 未就绪，请重载插件</div>';
-      }
     }
+    fetchDomainTree();
   } else {
     domainMode = false;
     if(domainLabel) domainLabel.classList.remove('active');
@@ -4624,6 +4656,33 @@ function toggleDomainMode() {
   }
 }
 
+function fetchDomainTree() {
+  if (typeof window.__IFTO_getDomainTree !== 'function') {
+    var inner = document.getElementById('domainTreeInner');
+    if (inner && !domainTreeData) inner.innerHTML = '<div class="dt-empty">Bridge 未就绪，请重载插件</div>';
+    return;
+  }
+  var domainFolder = (window.__IFTO_SETTINGS && window.__IFTO_SETTINGS.domainFolder) || '300-领域AREA';
+  window.__IFTO_getDomainTree(domainFolder).then(function(data) {
+    domainTreeData = data;
+    window._domainTreeCache = data;
+    if (domainMode) renderDomainTree(data);
+  }).catch(function(err) {
+    console.error('IFTO: bridge failed', err);
+    if (domainMode && !domainTreeData) {
+      var inner = document.getElementById('domainTreeInner');
+      if (inner) inner.innerHTML = '<div class="dt-empty">加载失败: ' + escHtml(String(err)) + '</div>';
+    }
+  });
+}
+
+// Called from main.js when anything under 300-领域AREA changes → live refresh.
+window.__IFTO_refreshDomainTree = function() {
+  domainTreeData = null;
+  window._domainTreeCache = null;
+  if (domainMode) fetchDomainTree();
+};
+
 function renderDomainTreeLoading() {
   var overlay = document.getElementById('domainTreeOverlay');
   var inner = document.getElementById('domainTreeInner');
@@ -4632,7 +4691,7 @@ function renderDomainTreeLoading() {
   overlay.style.display = 'block';
 }
 
-function renderDomainTree(treeData) {
+function _renderDomainTreeLegacy(treeData) {
   var overlay = document.getElementById('domainTreeOverlay');
   var inner = document.getElementById('domainTreeInner');
   if(!overlay || !inner) return;
@@ -4839,6 +4898,413 @@ function renderDomainTree(treeData) {
   }
 }
 
+// ====== Domain Dashboard (领域健康度卡片网格) ======
+function renderDomainTree(treeData) {
+  var overlay = document.getElementById('domainTreeOverlay');
+  var inner = document.getElementById('domainTreeInner');
+  if(!overlay || !inner) return;
+  overlay.style.display = 'block';
+  if(!treeData || treeData.length === 0) {
+    inner.innerHTML = '<div class="dt-empty">暂无领域数据</div>';
+    return;
+  }
+  try {
+    overlay.style.backgroundColor = 'var(--ifto-bg, #fff)';
+
+    if(!window._domainNav) window._domainNav = { stack: [] };
+    if(!window._domainView) window._domainView = 'cards';
+    var stack = window._domainNav.stack;
+    var view = window._domainView;
+
+    function countFiles(b){
+      var n = b.fileCount || 0;
+      var subs = b.subfolders || [];
+      for(var i=0;i<subs.length;i++) n += countFiles(subs[i]);
+      return n;
+    }
+    function pctOf(b){
+      if(b && b.progress !== null && b.progress !== undefined) return b.progress;
+      return (b && b.totalTasks > 0) ? Math.round(b.completedTasks / b.totalTasks * 100) : null;
+    }
+    function sortPinned(arr){
+      return arr.slice().sort(function(a, b){ return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0); });
+    }
+    var STALE_MS = 60 * 24 * 3600 * 1000;
+    function isStale(b){ return !!(b && b.mtime && (Date.now() - b.mtime > STALE_MS)); }
+    function relTime(ms){
+      if(!ms) return '';
+      var d = Math.floor((Date.now() - ms) / 86400000);
+      if(d <= 0) return '今天';
+      if(d === 1) return '昨天';
+      if(d < 30) return d + '天前';
+      return Math.floor(d / 30) + '个月前';
+    }
+    function findByPath(list, path){
+      for(var i=0;i<list.length;i++){
+        if(list[i].path === path) return list[i];
+        var r = findByPath(list[i].subfolders || [], path);
+        if(r) return r;
+      }
+      return null;
+    }
+    function childrenOf(b){
+      var out = [];
+      var subs = b.subfolders || [];
+      for(var i=0;i<subs.length;i++) out.push(subs[i]);
+      var fls = b.files || [];
+      for(var j=0;j<fls.length;j++){
+        var f = fls[j];
+        out.push({
+          name: f.title || (f.name || '').replace(/\.md$/i, ''),
+          path: f.path, leaf: true,
+          fileCount: 0, subfolders: [], files: [],
+          totalTasks: f.totalTasks || 0, completedTasks: f.completedTasks || 0,
+          pinned: !!f.pinned, mtime: f.mtime || 0
+        });
+      }
+      return out;
+    }
+    function metaText(b, leaf){
+      var p = pctOf(b);
+      if(leaf){
+        if(b.totalTasks > 0) return b.completedTasks + '/' + b.totalTasks + ' 任务';
+        return b.status || '无任务';
+      }
+      return (p === null ? '无任务' : p + '%') + ' · ' + countFiles(b) + ' 目标';
+    }
+    function cardHtml(b, leaf){
+      var p = pctOf(b);
+      var stale = isStale(b);
+      var pinned = !!b.pinned;
+      var tip = b.mtime ? ('最近更新 ' + relTime(b.mtime)) : '';
+      return '<div class="dt-card' + (leaf ? ' dt-leaf' : '') + (pinned ? ' pinned' : '') + '"'
+        + ' data-path="' + escHtml(b.path || '') + '" data-leaf="' + (leaf ? '1' : '0') + '"'
+        + ' style="--p:' + (p || 0) + '"'
+        + (tip ? ' title="' + escHtml(tip) + '"' : '') + '>'
+        + '<div class="dt-card-top"><span class="dt-card-name">' + escHtml(b.name) + '</span>'
+        + '<span class="dt-pin' + (pinned ? ' active' : '') + '" data-path="' + escHtml(b.path || '') + '" title="' + (pinned ? '取消置顶' : '置顶') + '">'
+        + '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>'
+        + '</span>'
+        + (stale ? '<span class="dt-stale" title="60天以上未更新">停</span>' : '')
+        + '</div>'
+        + '<div class="dt-bar"><i style="width:' + (p || 0) + '%"></i></div>'
+        + '<div class="dt-card-meta"><span>' + escHtml(metaText(b, leaf)) + '</span></div>'
+        + '</div>';
+    }
+
+    // ---- totals ----
+    var totalTopics = 0, totalAreas = 0, progSum = 0, progN = 0;
+    for(var i=0;i<treeData.length;i++){
+      var bp = pctOf(treeData[i]);
+      if(bp !== null){ progSum += bp; progN++; }
+      totalTopics += countFiles(treeData[i]);
+      totalAreas += (treeData[i].subfolders && treeData[i].subfolders.length) ? treeData[i].subfolders.length : 1;
+    }
+    var gp = progN > 0 ? Math.round(progSum / progN) : 0;
+
+    // ---- header (kept visible in every view / drill level) ----
+    function summaryHtml(){
+      function vb(v, label, glyph){
+        return '<button class="dt-view-btn' + (view === v ? ' active' : '') + '" data-view="' + v + '" title="' + label + '">' + glyph + '</button>';
+      }
+      return '<div class="dt-summary">'
+        + '<span class="dt-sum-left">'
+        + '<span class="dt-sum-meta">' + totalAreas + ' 领域 · ' + totalTopics + ' 目标 · 总进度 ' + gp + '%</span>'
+        + '<span class="dt-sum-bar"><i style="width:' + gp + '%"></i></span>'
+        + '<span class="dt-view-toggle">'
+        + vb('cards', '卡片视图', '▦') + vb('sun', '圆扇形视图', '◔') + vb('tree', '树状图视图', '≣')
+        + '</span>'
+        + '</span>'
+        + '<span class="dt-title-wrap">'
+        + '<span class="dt-title-ghost">AREA</span>'
+        + '<span class="dt-title-main">AREA领域</span>'
+        + '</span>'
+        + '</div>';
+    }
+
+    // ---- pinned row: pinned nodes + all goals nested under them ----
+    function buildPinnedRow(){
+      var pinnedNodes = [];
+      (function collect(list){
+        for(var i=0;i<list.length;i++){
+          if(list[i].pinned) pinnedNodes.push(list[i]);
+          collect(list[i].subfolders || []);
+        }
+      })(treeData);
+      if(pinnedNodes.length === 0) return '';
+      var seen = {}, entries = [];
+      function addFolder(node){
+        if(!seen[node.path]){ seen[node.path] = 1; entries.push({ node: node, leaf: false }); }
+      }
+      function addFile(f){
+        if(seen[f.path]) return;
+        seen[f.path] = 1;
+        entries.push({ node: f, leaf: true });
+      }
+      for(var i=0;i<pinnedNodes.length;i++){
+        var nd = pinnedNodes[i];
+        addFolder(nd);
+        (function descend(node){
+          var fls = node.files || [];
+          for(var j=0;j<fls.length;j++) addFile(fls[j]);
+          var subs = node.subfolders || [];
+          for(var k=0;k<subs.length;k++) descend(subs[k]);
+        })(nd);
+      }
+      var h = '<div class="dt-group dt-pinned-group">';
+      h += '<div class="dt-group-head"><span class="dt-group-name">置顶目标</span><span class="dt-group-line"></span></div>';
+      h += '<div class="dt-grid">';
+      for(var c=0;c<entries.length;c++){
+        if(entries[c].leaf){
+          var f = entries[c].node;
+          h += cardHtml({
+            name: f.title || (f.name || '').replace(/\.md$/i, ''),
+            path: f.path, leaf: true, fileCount: 0, subfolders: [], files: [],
+            totalTasks: f.totalTasks || 0, completedTasks: f.completedTasks || 0,
+            progress: (f.progress !== undefined ? f.progress : null),
+            pinned: !!f.pinned, mtime: f.mtime || 0
+          }, true);
+        } else {
+          h += cardHtml(entries[c].node, false);
+        }
+      }
+      h += '</div></div>';
+      return h;
+    }
+
+    // ---- radial sunburst view ----
+    function buildSunburst(){
+      var W = 900, H = 600, cx = 450, cy = 300, R0 = 58, R1 = 175, R2 = 235, R3a = 245, R3b = 292;
+      var sectorAngle = 2 * Math.PI / treeData.length;
+      function sector(r1, r2, a1, a2){
+        var large = (a2 - a1) > Math.PI ? 1 : 0;
+        var x1o = cx + r2*Math.cos(a1), y1o = cy + r2*Math.sin(a1);
+        var x2o = cx + r2*Math.cos(a2), y2o = cy + r2*Math.sin(a2);
+        var x1i = cx + r1*Math.cos(a1), y1i = cy + r1*Math.sin(a1);
+        var x2i = cx + r1*Math.cos(a2), y2i = cy + r1*Math.sin(a2);
+        return 'M '+x1o+' '+y1o+' A '+r2+' '+r2+' 0 '+large+' 1 '+x2o+' '+y2o+' L '+x2i+' '+y2i+' A '+r1+' '+r1+' 0 '+large+' 0 '+x1i+' '+y1i+' Z';
+      }
+      var defs = '', arcId = 0;
+      function arcPath(r, a1, a2){
+        var midA = (a1 + a2) / 2;
+        var top = Math.sin(midA) < 0.5;
+        var s = top ? a1 : a2, e = top ? a2 : a1;
+        var id = 'dsa' + (arcId++);
+        defs += '<path id="'+id+'" d="M '+(cx + r*Math.cos(s))+' '+(cy + r*Math.sin(s))+' A '+r+' '+r+' 0 0 '+(top?1:0)+' '+(cx + r*Math.cos(e))+' '+(cy + r*Math.sin(e))+'" fill="none" stroke="none"/>';
+        return id;
+      }
+      function alpha(p){ return (0.14 + 0.86 * Math.max(0, Math.min(100, p||0)) / 100).toFixed(3); }
+      var svg = '<svg class="dt-sun-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      for(var i=0;i<treeData.length;i++){
+        var branch = treeData[i];
+        var a1 = -Math.PI/2 + i*sectorAngle, a2 = a1 + sectorAngle;
+        var bpc = pctOf(branch) || 0;
+        var fillR = R0 + (R1 - R0) * Math.max(0.03, bpc/100);
+        svg += '<path d="'+sector(R0,R1,a1,a2)+'" style="fill:var(--ifto-divider,#eee)"/>';
+        svg += '<path d="'+sector(R0,fillR,a1,a2)+'" style="fill:var(--ifto-text,#111);fill-opacity:'+alpha(bpc)+'"/>';
+        svg += '<path class="dt-sun-sector" data-path="'+escHtml(branch.path||'')+'" data-leaf="0" d="'+sector(R0,R1,a1,a2)+'" fill="transparent" style="cursor:pointer"><title>'+escHtml(branch.name+' '+bpc+'%')+'</title></path>';
+        var m1 = (a1+a2)/2, lr1 = R0 + (R1-R0)*0.5;
+        svg += '<text x="'+(cx+lr1*Math.cos(m1))+'" y="'+(cy+lr1*Math.sin(m1))+'" text-anchor="middle" dominant-baseline="middle" style="fill:var(--ifto-text,#111);font-size:12px;font-weight:600;pointer-events:none">'+escHtml(branch.name)+'</text>';
+        var subs = branch.subfolders || [];
+        var childAngle = sectorAngle / Math.max(1, subs.length);
+        for(var s2=0;s2<subs.length;s2++){
+          var sub = subs[s2];
+          var sa1 = a1 + s2*childAngle + childAngle*0.04, sa2 = a1 + (s2+1)*childAngle - childAngle*0.04;
+          var spc = pctOf(sub) || 0;
+          var sFillR = (R1+10) + (R2 - (R1+10)) * Math.max(0.03, spc/100);
+          svg += '<path d="'+sector(R1+10,R2,sa1,sa2)+'" style="fill:var(--ifto-divider,#eee)"/>';
+          svg += '<path d="'+sector(R1+10,sFillR,sa1,sa2)+'" style="fill:var(--ifto-text,#111);fill-opacity:'+alpha(spc)+'"/>';
+          svg += '<path class="dt-sun-sector" data-path="'+escHtml(sub.path||'')+'" data-leaf="0" d="'+sector(R1+10,R2,sa1,sa2)+'" fill="transparent" style="cursor:pointer"><title>'+escHtml(sub.name+' '+spc+'%')+'</title></path>';
+          var pid = arcPath(R1+10 + (R2-(R1+10))*0.55, sa1, sa2);
+          svg += '<text style="fill:var(--ifto-text-2,#666);font-size:9px;font-weight:600;pointer-events:none"><textPath href="#'+pid+'" startOffset="50%" text-anchor="middle">'+escHtml(sub.name)+' '+spc+'%</textPath></text>';
+          var fls = sub.files || [];
+          for(var f3=0; f3<fls.length; f3++){
+            var ff = fls[f3];
+            var fa1 = sa1 + f3*(sa2-sa1)/fls.length, fa2 = sa1 + (f3+1)*(sa2-sa1)/fls.length;
+            var fpc = pctOf(ff) || 0;
+            var fFillR = R3a + (R3b - R3a) * Math.max(0.03, fpc/100);
+            svg += '<path d="'+sector(R3a,R3b,fa1,fa2)+'" style="fill:var(--ifto-divider,#eee)"/>';
+            svg += '<path d="'+sector(R3a,fFillR,fa1,fa2)+'" style="fill:var(--ifto-text,#111);fill-opacity:'+alpha(fpc)+'"/>';
+            var fname = (ff.title || ff.name || '').replace(/\.md$/i, '');
+            svg += '<path class="dt-sun-sector" data-path="'+escHtml(ff.path||'')+'" data-leaf="1" d="'+sector(R3a,R3b,fa1,fa2)+'" fill="transparent" style="cursor:pointer"><title>'+escHtml(fname+' '+fpc+'%')+'</title></path>';
+          }
+        }
+      }
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+R0+'" style="fill:var(--ifto-bg,#fff);pointer-events:none"/>';
+      svg += '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" style="fill:var(--ifto-text,#111);font-size:14px;font-weight:600">AREA</text>';
+      svg += '<text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" style="fill:var(--ifto-text-2,#666);font-size:10px">'+gp+'%</text>';
+      svg += '<defs>'+defs+'</defs></svg>';
+      return '<div class="dt-visual dt-sun-wrap"><div class="dt-sun">'+svg+'</div></div>';
+    }
+
+    // ---- hierarchical tree view ----
+    function buildTree(){
+      function rowHtml(name, path, p, depth, leaf){
+        return '<div class="dt-tree-row'+(leaf?' dt-tree-leaf':'')+'" data-path="'+escHtml(path||'')+'" data-leaf="'+(leaf?'1':'0')+'" style="padding-left:'+(6 + depth*18)+'px">'
+          + '<span class="dt-tree-name">'+escHtml(name)+'</span>'
+          + '<span class="dt-tree-track"><i style="width:'+((p||0))+'%"></i></span>'
+          + '<span class="dt-tree-pct">'+(p===null||p===undefined?'—':p+'%')+'</span>'
+          + '</div>';
+      }
+      function walk(b, depth, leaf){
+        var h = rowHtml(b.name, b.path, pctOf(b), depth, leaf);
+        if(!leaf){
+          var subs = b.subfolders || [];
+          for(var i=0;i<subs.length;i++) h += walk(subs[i], depth+1, false);
+          var fls = b.files || [];
+          for(var j=0;j<fls.length;j++){
+            var f = fls[j];
+            h += rowHtml(f.title || (f.name||'').replace(/\.md$/i,''), f.path, pctOf(f), depth+1, true);
+          }
+        }
+        return h;
+      }
+      var h = '<div class="dt-visual dt-tree">';
+      for(var i=0;i<treeData.length;i++) h += walk(treeData[i], 0, false);
+      h += '</div>';
+      return h;
+    }
+
+    var body = '';
+    if(view !== 'cards' && stack.length) stack.length = 0;
+    if(view === 'sun'){
+      body = buildSunburst();
+    } else if(view === 'tree'){
+      body = buildTree();
+    } else if(stack.length === 0) {
+      // ---- Overview (cards) ----
+      var groupsHtml = '';
+      for(var g=0; g<treeData.length; g++){
+        var group = treeData[g];
+        var gpct = pctOf(group);
+        var gRawName = (group.path || '').split('/').pop() || group.name;
+        var cards = sortPinned((group.subfolders && group.subfolders.length) ? group.subfolders : childrenOf(group));
+        groupsHtml += '<div class="dt-group">';
+        groupsHtml += '<div class="dt-group-head"><span class="dt-group-name">' + escHtml(gRawName) + '</span>'
+          + '<span class="dt-group-line"></span>'
+          + '<span class="dt-group-pct">' + (gpct === null ? '—' : gpct + '%') + '</span></div>';
+        groupsHtml += '<div class="dt-grid">';
+        if(cards.length === 0) groupsHtml += '<div class="dt-none">暂无子领域</div>';
+        for(var c=0;c<cards.length;c++) groupsHtml += cardHtml(cards[c], false);
+        groupsHtml += '</div></div>';
+      }
+      body = '<div class="dt-groups">' + buildPinnedRow() + groupsHtml + '</div>';
+    } else {
+      // ---- Drilldown (cards) ----
+      var node = findByPath(treeData, stack[stack.length - 1]);
+      if(!node) {
+        window._domainNav.stack.length = 0;
+        return renderDomainTree(treeData);
+      }
+      var kids = sortPinned(childrenOf(node));
+      var npct = pctOf(node);
+      var gridHtml = '';
+      if(kids.length === 0) gridHtml += '<div class="dt-none">暂无目标</div>';
+      for(var k=0;k<kids.length;k++) gridHtml += cardHtml(kids[k], !!kids[k].leaf);
+      body = '<div class="dt-groups">'
+        + '<div class="dt-detail-head">'
+        + '<button class="dt-back" id="dtBack">\u2190 返回</button>'
+        + '<span class="dt-detail-title">' + escHtml(node.name) + '</span>'
+        + '<span class="dt-group-line"></span>'
+        + '<span class="dt-group-pct">' + (npct === null ? '—' : npct + '%') + '</span>'
+        + '</div>'
+        + '<div class="dt-grid">' + gridHtml + '</div></div>';
+    }
+
+    var html = '<div class="dt-board">' + summaryHtml() + '<div class="dt-scroll">' + body + '</div></div>';
+
+    inner.style.position = 'absolute';
+    inner.style.top = '0px';
+    inner.style.left = '0px';
+    inner.style.right = '0px';
+    inner.style.bottom = '0px';
+    inner.style.width = 'auto';
+    inner.style.height = 'auto';
+    inner.style.transform = 'none';
+    inner.style.overflow = 'hidden';
+    inner.innerHTML = html;
+
+    var back = document.getElementById('dtBack');
+    if(back) back.addEventListener('click', function(e){
+      e.stopPropagation();
+      window._domainNav.stack.pop();
+      renderDomainTree(window._domainTreeCache || treeData);
+    });
+
+    var cardsEls = inner.querySelectorAll('.dt-card');
+    for(var ci=0; ci<cardsEls.length; ci++){
+      cardsEls[ci].addEventListener('click', function(e){
+        e.stopPropagation();
+        var path = this.getAttribute('data-path');
+        var leaf = this.getAttribute('data-leaf') === '1';
+        if(!path) return;
+        if(leaf) {
+          if(typeof window.__IFTO_openFile === 'function') window.__IFTO_openFile(path);
+          return;
+        }
+        window._domainNav.stack.push(path);
+        renderDomainTree(window._domainTreeCache || treeData);
+      });
+    }
+
+    var pinEls = inner.querySelectorAll('.dt-pin');
+    for(var pi=0; pi<pinEls.length; pi++){
+      pinEls[pi].addEventListener('click', function(e){
+        e.stopPropagation();
+        e.preventDefault();
+        var path = this.getAttribute('data-path');
+        if(!path || typeof window.__IFTO_togglePin !== 'function') return;
+        window.__IFTO_togglePin(path).then(function(){
+          domainTreeData = null;
+          window._domainTreeCache = null;
+          fetchDomainTree();
+        });
+      });
+    }
+
+    var vbtns = inner.querySelectorAll('.dt-view-btn');
+    for(var vi=0; vi<vbtns.length; vi++){
+      vbtns[vi].addEventListener('click', function(e){
+        e.stopPropagation();
+        window._domainView = this.getAttribute('data-view') || 'cards';
+        window._domainNav.stack = [];
+        dZoom = 1; dPanX = 0; dPanY = 0;
+        renderDomainTree(window._domainTreeCache || treeData);
+      });
+    }
+
+    var sunSecs = inner.querySelectorAll('.dt-sun-sector');
+    for(var ssi=0; ssi<sunSecs.length; ssi++){
+      sunSecs[ssi].addEventListener('click', function(e){
+        e.stopPropagation();
+        var p = this.getAttribute('data-path');
+        var leaf = this.getAttribute('data-leaf') === '1';
+        if(!p) return;
+        if(leaf){ if(typeof window.__IFTO_openFile === 'function') window.__IFTO_openFile(p); return; }
+        window._domainView = 'cards';
+        window._domainNav.stack = [p];
+        renderDomainTree(window._domainTreeCache || treeData);
+      });
+    }
+
+    var zc = document.getElementById('domainZoomCtrl');
+    if(zc) zc.style.display = (view === 'sun') ? 'flex' : 'none';
+    if(view === 'sun') applyDomainTransform();
+
+    var treeLeaves = inner.querySelectorAll('.dt-tree-leaf');
+    for(var tli=0; tli<treeLeaves.length; tli++){
+      treeLeaves[tli].addEventListener('click', function(e){
+        e.stopPropagation();
+        var p = this.getAttribute('data-path');
+        if(p && typeof window.__IFTO_openFile === 'function') window.__IFTO_openFile(p);
+      });
+    }
+  } catch(err) {
+    inner.innerHTML = '<div class="dt-empty">渲染出错: ' + escHtml(String(err)) + '</div>';
+    console.error('IFTO: renderDomainTree error', err);
+  }
+}
+
 // Click "领域" to toggle domain skill tree
 document.getElementById('heroDomainLabel')?.addEventListener('click', function(e) {
   e.stopPropagation();
@@ -4888,6 +5354,57 @@ scrollContainer.addEventListener('scroll',()=>{
 },{passive:true});
 setTimeout(updateActiveNav,200);
 
+// ====== In-page confirm (avoids native dialog focus loss) ======
+function iftoConfirm(message, okText) {
+  return new Promise(function(resolve){
+    var root = document.querySelector('.ifto-container') || document.body;
+    var overlay = document.createElement('div');
+    overlay.className = 'ifto-confirm-overlay';
+    var box = document.createElement('div');
+    box.className = 'ifto-confirm-box';
+    var msg = document.createElement('div');
+    msg.className = 'ifto-confirm-msg';
+    msg.textContent = message || '';
+    var row = document.createElement('div');
+    row.className = 'ifto-confirm-actions';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'ifto-confirm-btn';
+    cancelBtn.textContent = '取消';
+    var okBtn = document.createElement('button');
+    okBtn.className = 'ifto-confirm-btn ifto-confirm-ok';
+    okBtn.textContent = okText || '确定';
+    row.appendChild(cancelBtn);
+    row.appendChild(okBtn);
+    box.appendChild(msg);
+    box.appendChild(row);
+    overlay.appendChild(box);
+    root.appendChild(overlay);
+
+    var prevFocus = document.activeElement;
+    var done = false;
+    function close(val){
+      if(done) return;
+      done = true;
+      document.removeEventListener('keydown', onKey, true);
+      try { overlay.parentNode && overlay.parentNode.removeChild(overlay); } catch(e) {}
+      try {
+        if(prevFocus && document.body.contains(prevFocus)) prevFocus.focus({preventScroll:true});
+        else { var c = document.querySelector('.ifto-container'); if(c) c.focus({preventScroll:true}); }
+      } catch(e) {}
+      resolve(val);
+    }
+    function onKey(e){
+      if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(false); }
+      else if(e.key === 'Enter'){ e.preventDefault(); e.stopPropagation(); close(true); }
+    }
+    cancelBtn.onclick = function(e){ e.preventDefault(); e.stopPropagation(); close(false); };
+    okBtn.onclick = function(e){ e.preventDefault(); e.stopPropagation(); close(true); };
+    overlay.onclick = function(e){ if(e.target === overlay) close(false); };
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(function(){ try { okBtn.focus(); } catch(e) {} }, 0);
+  });
+}
+
 // ====== Right-click delete cards & folders ======
 document.querySelector('.ifto-container')?.addEventListener('contextmenu', function(e) {
   var card = e.target.closest('.card-detail, .todo-item, .card-sm, .project-card, .project-file-item, .project-folder-card, .project-folder-header, .note-card, .habit-row, .wn-card');
@@ -4899,20 +5416,22 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     var folderPath = card.getAttribute('data-path') || card.getAttribute('data-folder');
     if(!folderPath) return;
     var folName = folderPath.split('/').pop();
-    if(confirm('确定要删除项目文件夹「' + folName + '」及其所有内容吗？')) {
+    iftoConfirm('确定要删除项目文件夹「' + folName + '」及其所有内容吗？').then(function(ok){
+      if(!ok) return;
       if(window.__IFTO_deleteFolder) {
-        window.__IFTO_deleteFolder(folderPath).then(function(ok){
-          if(ok) { renderInbox(); renderProject(); renderTodo(); renderActivity(); renderNote(); }
+        window.__IFTO_deleteFolder(folderPath).then(function(res){
+          if(res) { renderInbox(); renderProject(); renderTodo(); renderActivity(); renderNote(); }
         });
       }
-    }
+    });
     return;
   }
 
   var path = card.getAttribute('data-path');
   if(!path) return;
   var name = path.split('/').pop().replace(/\.md$/i,'');
-  if(confirm('确定要删除「' + name + '」吗？')) {
+  iftoConfirm('确定要删除「' + name + '」吗？').then(function(ok){
+    if(!ok) return;
     if(window.__IFTO_deleteFile) {
       if(_isDraftPath(path)) console.log('[IFTO] 草稿箱右键删除: "' + path + '"');
       window.__IFTO_deleteFile(path).then(function(success){
@@ -4938,5 +5457,5 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
         }
       });
     }
-  }
+  });
 });

@@ -769,3 +769,274 @@ body.theme-dark .ifto-container {
   font-size: 12px; font-weight: 600; color: var(--ifto-text, #111);
   min-width: 36px; text-align: center;
 }
+
+/* ====== Domain Dashboard (领域健康度卡片网格) ====== */
+.dt-board {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 26px 0;
+  overflow: hidden;
+  color: var(--ifto-text, #111);
+}
+/* Only this inner area scrolls — the AREA领域 header stays put. */
+.dt-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 26px;
+}
+.dt-sum-left { display: flex; align-items: flex-end; gap: 12px; }
+.dt-summary {
+  flex: 0 0 auto;
+  display: flex; align-items: flex-end; gap: 14px;
+  flex-wrap: wrap;
+  padding: 4px 2px 16px;
+  border-bottom: 1px solid var(--ifto-divider, #e5e7eb);
+}
+/* Overlapping title — mirrors the homepage .section-title-wrap / .section-title
+   (.section-title-watermark) pairing: a big faint ghost word behind a smaller
+   solid word, bottom-aligned. */
+.dt-title-wrap {
+  flex: 0 0 auto;
+  display: grid;
+  align-items: end;
+  justify-items: end;
+  line-height: 1;
+  margin-left: auto;
+}
+.dt-title-wrap > * { grid-area: 1 / 1; }
+.dt-title-ghost {
+  font-size: 80px;
+  font-weight: 350;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: #BDBDBD;
+  opacity: .25;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dt-title-main {
+  position: relative;
+  z-index: 1;
+  font-size: 56px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  line-height: 1;
+  color: #333;
+  white-space: nowrap;
+}
+.theme-dark .dt-title-ghost { color: #555; }
+.theme-dark .dt-title-main { color: var(--ifto-text, #e8e8e8); }
+.dt-sum-meta { font-size: 11px; color: var(--ifto-text-2, #6b7280); margin-left: 0; white-space: nowrap; }
+.dt-sum-bar {
+  flex: 0 0 auto; width: 90px; height: 4px; border-radius: 2px;
+  background: var(--ifto-divider, #e5e7eb); overflow: hidden;
+}
+.dt-sum-bar > i { display: block; height: 100%; background: var(--ifto-text, #111); border-radius: 2px; }
+
+.dt-groups {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 26px;
+  padding: 24px 0 6px;
+}
+.dt-group-head, .dt-detail-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.dt-group-name { font-size: 13px; font-weight: 600; letter-spacing: 1px; color: var(--ifto-text, #111); }
+.dt-detail-title { font-size: 14px; font-weight: 600; letter-spacing: 1px; }
+.dt-group-line { flex: 1; height: 1px; background: var(--ifto-divider, #e5e7eb); }
+.dt-group-pct { font-size: 11px; font-weight: 500; color: var(--ifto-text-2, #6b7280); font-variant-numeric: tabular-nums; }
+.dt-back {
+  border: none; background: transparent; cursor: pointer; padding: 2px 8px;
+  font-size: 12px; color: var(--ifto-text-2, #6b7280); border-radius: 4px;
+}
+.dt-back:hover { background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
+
+.dt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.dt-none { grid-column: 1 / -1; font-size: 11px; color: var(--ifto-text-3, #9ca3af); padding: 8px 2px; }
+
+.dt-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 13px 14px 12px;
+  min-width: 0;
+  background: var(--ifto-card-bg, #fff);
+  border: 1px solid var(--ifto-divider, #e5e7eb);
+  border-left-width: 3px;
+  border-left-color: var(--ifto-divider, #e5e7eb);
+  border-left-color: color-mix(in srgb, var(--ifto-text, #111) calc(var(--p, 0) * 1%), var(--ifto-divider, #e5e7eb));
+  border-radius: var(--ifto-radius, 8px);
+  cursor: pointer;
+  transition: box-shadow .15s, transform .1s, border-color .15s;
+}
+.dt-card:hover { box-shadow: var(--ifto-shadow-strong, 0 4px 16px rgba(0,0,0,.1)); transform: translateY(-1px); }
+.dt-card-top { display: flex; align-items: center; gap: 6px; }
+.dt-card-name {
+  flex: 1; font-size: 13.5px; font-weight: 600; letter-spacing: .2px;
+  color: var(--ifto-text, #111);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dt-stale {
+  flex: 0 0 auto; font-size: 9px; line-height: 1; font-weight: 700;
+  padding: 2px 4px; border-radius: 3px;
+  background: rgba(234, 179, 8, .18); color: #b45309;
+}
+.dt-bar { height: 5px; border-radius: 3px; background: var(--ifto-divider, #e5e7eb); overflow: hidden; }
+.dt-bar > i { display: block; height: 100%; border-radius: 3px; background: var(--ifto-text, #111); transition: width .3s; }
+.dt-card-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px; color: var(--ifto-text-2, #6b7280);
+}
+
+.dt-pin {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 4px;
+  color: var(--ifto-text-3, #9ca3af);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s, color .15s, background .15s;
+}
+.dt-card:hover .dt-pin { opacity: .65; }
+.dt-pin:hover { opacity: 1; background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
+.dt-pin.active { opacity: 1; color: var(--ifto-text, #111); }
+.dt-card.pinned {
+  background: var(--ifto-gray-6, #f2f2f2);
+  box-shadow: inset 0 0 0 1px var(--ifto-text-3, #9ca3af);
+}
+
+/* View toggle (cards / sunburst / tree) */
+.dt-view-toggle { display: flex; align-items: center; gap: 2px; margin: 0 2px; }
+.dt-view-btn {
+  width: 24px; height: 24px; padding: 0; border: none; background: transparent;
+  color: var(--ifto-text-3, #9ca3af); border-radius: 4px; font-size: 13px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.dt-view-btn:hover { background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
+.dt-view-btn.active { background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
+
+.dt-pinned-group .dt-group-name { color: var(--ifto-text, #111); }
+.dt-pinned-group .dt-group-line { background: var(--ifto-text-3, #9ca3af); }
+
+/* Sunburst / tree visual views */
+.dt-visual {
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+  min-height: 0; padding: 14px 0 0; overflow: hidden;
+}
+.dt-sun-svg { width: min(100%, 720px); height: auto; max-height: 100%; display: block; }
+.dt-sun-wrap { position: relative; overflow: hidden; }
+.dt-sun { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transform-origin: center center; will-change: transform; }
+.dt-sun-sector { pointer-events: auto; }
+.dt-sun-sector:hover { fill: var(--ifto-text, #111); fill-opacity: .08; }
+.dt-tree { flex: 0 0 auto; flex-direction: column; align-items: stretch; justify-content: flex-start; overflow: visible; gap: 1px; padding: 10px 2px; }
+.dt-tree-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; }
+.dt-tree-leaf { cursor: pointer; }
+.dt-tree-leaf:hover { background: var(--ifto-divider, #e5e7eb); }
+.dt-tree-name { flex: 0 0 auto; font-size: 13px; color: var(--ifto-text, #111); white-space: nowrap; }
+.dt-tree-leaf .dt-tree-name { font-weight: 500; }
+.dt-tree-track { flex: 1 1 auto; min-width: 60px; height: 5px; border-radius: 3px; background: var(--ifto-divider, #e5e7eb); overflow: hidden; }
+.dt-tree-track > i { display: block; height: 100%; background: var(--ifto-text, #111); border-radius: 3px; }
+.dt-tree-pct { flex: 0 0 auto; width: 42px; text-align: right; font-size: 11px; color: var(--ifto-text-2, #6b7280); font-variant-numeric: tabular-nums; }
+
+.dt-leaf .dt-card-name { font-weight: 500; }
+
+/* ====== In-page confirm dialog (native-dialog replacement) ====== */
+.ifto-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .35);
+  animation: iftoConfirmIn .12s ease;
+}
+@keyframes iftoConfirmIn { from { opacity: 0; } to { opacity: 1; } }
+.ifto-confirm-box {
+  min-width: 260px;
+  max-width: 380px;
+  padding: 18px 18px 14px;
+  background: var(--ifto-card-bg, #fff);
+  color: var(--ifto-text, #111);
+  border-radius: var(--ifto-radius, 8px);
+  box-shadow: var(--ifto-shadow-strong, 0 4px 16px rgba(0, 0, 0, .1));
+  border: 1px solid var(--ifto-divider, #e5e7eb);
+}
+.ifto-confirm-msg {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+.ifto-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ifto-confirm-btn {
+  min-width: 64px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: var(--ifto-radius, 6px);
+  border: 1px solid var(--ifto-divider, #e5e7eb);
+  background: transparent;
+  color: var(--ifto-text-2, #6b7280);
+  transition: background .15s, color .15s;
+}
+.ifto-confirm-btn:hover { background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
+.ifto-confirm-ok {
+  background: var(--ifto-text, #111);
+  color: var(--ifto-accent-text, #fff);
+  border-color: var(--ifto-text, #111);
+}
+.ifto-confirm-ok:hover { background: var(--ifto-text, #111); color: var(--ifto-accent-text, #fff); opacity: .88; }
+
+/* ====== Domain dashboard responsive ====== */
+@media (min-width: 2200px) {
+  .dt-board { padding: 26px 30px 0; }
+  .dt-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .dt-card { padding: 15px 16px 14px; gap: 12px; }
+  .dt-card-name { font-size: 15px; }
+  .dt-card-meta { font-size: 12px; }
+  .dt-title-ghost { font-size: 96px; }
+  .dt-title-main { font-size: 66px; }
+}
+@media (min-width: 2900px) {
+  .dt-board { padding: 30px 34px 0; }
+  .dt-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .dt-card { padding: 18px 18px 16px; }
+  .dt-card-name { font-size: 17px; }
+  .dt-card-meta { font-size: 13px; }
+  .dt-title-ghost { font-size: 112px; }
+  .dt-title-main { font-size: 78px; }
+}
+@media (max-width: 900px) {
+  .dt-board { padding: 18px 18px 0; }
+  .dt-title-ghost { font-size: 60px; }
+  .dt-title-main { font-size: 42px; }
+  .dt-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+@media (max-width: 600px) {
+  .dt-board { padding: 16px 14px 0; }
+  .dt-summary { gap: 8px; }
+  .dt-title-ghost { font-size: 44px; letter-spacing: 1px; }
+  .dt-title-main { font-size: 32px; letter-spacing: 3px; }
+  .dt-sum-meta { font-size: 10px; }
+  .dt-sum-bar { width: 64px; }
+  .dt-groups { gap: 18px; padding-top: 14px; }
+  .dt-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+  .dt-card { padding: 11px 12px 10px; gap: 8px; }
+  .dt-card-name { font-size: 12.5px; }
+  .dt-group-name { font-size: 12px; }
+}

@@ -1,8 +1,6 @@
 {
-
   "deepseekApiKey": "your_access_key",
   "minimaxApiKey": "your_access_key",
-
   "collectionTemplate": "900-数据库/910-模板Templates/INBOX专用",
   "readingTemplate": "900-数据库/910-模板Templates/paper-template rating",
   "notePath": "000-信箱 INBOX/040-笔记",
@@ -50,6 +48,8 @@
   "widgetMinimaxEnabled": false,
   "widgetWeeknotesPath": "000-信箱INBOX/040-笔记",
   "widgetTodotodoPath": "000-信箱INBOX/031-今日待办",
+  "domainFolder": "300-领域AREA",
+  "pinnedAreas": [],
   "zoom": 1,
   "bgColor": "",
   "borderRadius": 0,

@@ -1,8 +1,7 @@
 const crypto = require('crypto');
 const https = require('https');
-
-const AK = 'your_access_key';
-const SK = 'your_access_key';
+const AK = 'YOUR_VOLC_ACCESS_KEY_ID';
+const SK = 'YOUR_VOLC_SECRET_ACCESS_KEY';
 
 // COMPLETELY IDENTICAL to test_volc2.js sign function
 function sign(action, method, payload) {
