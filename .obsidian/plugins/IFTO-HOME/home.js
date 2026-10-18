@@ -107,23 +107,23 @@ function _getFolder(key, fallback) {
 // __IFTO_SETTINGS at the moment of use, matching how getInboxFolder() etc.
 // already work for the other folder fields.
 Object.defineProperty(globalThis, 'TODO_FOLDER', {
-  get: function() { return _getFolder('todoFolder', '010-信箱 INBOX/031-今日待办'); },
+  get: function() { return _getFolder('todoFolder', '000-信箱 INBOX/031-今日待办'); },
   configurable: true
 });
 Object.defineProperty(globalThis, 'ACTIVITY_FOLDER', {
-  get: function() { return _getFolder('activityFolder', '010-信箱 INBOX/030-活动清单'); },
+  get: function() { return _getFolder('activityFolder', '000-信箱 INBOX/030-活动清单'); },
   configurable: true
 });
 Object.defineProperty(globalThis, 'TASK_FOLDER', {
-  get: function() { return _getFolder('taskFolder', '100-工作台WORKDESK/120-项目管理/121-未开始'); },
+  get: function() { return _getFolder('taskFolder', '100-工作台WORKDESK/120-项目管理'); },
   configurable: true
 });
 var _organizeResourceExpanded = [];
 var _organizeProjectExpanded = [];
-function getInboxFolder() { return _getFolder('inboxFolder', '010-信箱 INBOX/020-收集'); }
-function getQuickLearnFolder() { return _getFolder('quickLearnFolder', '010-信箱 INBOX/011-快速学习'); }
+function getInboxFolder() { return _getFolder('inboxFolder', '000-信箱 INBOX/010-收集'); }
+function getQuickLearnFolder() { return _getFolder('quickLearnFolder', '100-工作台WORKDESK/101-快速学习'); }
 function getProjectBase() { return _getFolder('projectBase', '100-工作台WORKDESK/120-项目管理'); }
-function getProjectCols() { return (_getFolder('projectCols', '121-未开始,122-推进中,123-已完成')).split(',').map(function(s){return s.trim();}).filter(function(s){return s;}); }
+function getProjectCols() { return (_getFolder('projectCols', '')).split(',').map(function(s){return s.trim();}).filter(function(s){return s;}); }
 function getDraftFolder() { return _getFolder('draftFolder', '100-工作台WORKDESK/110-草稿箱'); }
 function _isDraftPath(path) {
   if (!path) return false;
@@ -142,7 +142,7 @@ function switchProjectMiddleView(view) {
 function getBookFolder() { return _getFolder('bookFolder', '400-资源RESOURCE/420-览阅/421-书籍'); }
 function getPaperFolder() { return _getFolder('paperFolder', '400-资源RESOURCE/420-览阅/422-论文'); }
 function getResourceRoot() { return _getFolder('resourceRoot', '400-资源RESOURCE'); }
-function getNoteFolder() { return _getFolder('notePath', '010-信箱 INBOX/040-笔记'); }
+function getNoteFolder() { return _getFolder('notePath', '000-信箱 INBOX/040-笔记'); }
 
 // ====== Inbox Tab State ======
 var inboxTab = 'collect';
@@ -3026,7 +3026,7 @@ if(_sbtn){_sbtn.onclick = async function(e){
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
-  var folder = _getSCPath('inboxFolder', 'shortcutCollectPath', '010-信箱 INBOX/020-收集');
+  var folder = _getSCPath('inboxFolder', 'shortcutCollectPath', '000-信箱 INBOX/010-收集');
   var s = window.__IFTO_SETTINGS || {};
   var tpl = s.collectionTemplate || s.shortcutCollectTemplate || '';
   var content = '';
@@ -3051,7 +3051,7 @@ if(_st){_st.onclick = async function(e){
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
-  var folder = _getSCPath('activityFolder', 'shortcutTodoPath', '010-信箱 INBOX/030-活动清单');
+  var folder = _getSCPath('activityFolder', 'shortcutTodoPath', '000-信箱 INBOX/030-活动清单');
   var s = window.__IFTO_SETTINGS || {};
   var tpl = s.shortcutTodoTemplate || '';
   var content = '- [ ] \n';
@@ -3086,7 +3086,7 @@ if(_stask){_stask.onclick = async function(e){
   e.preventDefault();
   var s = window.__IFTO_SETTINGS || {};
   var tpl = s.projectTaskTemplate || '';
-  var folder = _getSCPath('taskFolder', 'shortcutTaskPath', '100-工作台WORKDESK/120-项目管理/121-未开始');
+  var folder = _getSCPath('taskFolder', 'shortcutTaskPath', '100-工作台WORKDESK/120-项目管理');
   var now = new Date();
   var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   var fn = ts+'.md';
