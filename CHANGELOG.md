@@ -2,6 +2,13 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [1.1.1] - 2026-10-18
+
+- 更新 versions.json: 1.1.1
+- 发布 IFTO-HOME 1.1.1
+- CHANGELOG: 移除已停用的 Ollama / Ragflow 小组件描述
+- 添加 CHANGELOG.md；README 增加版本徽章与更新日志链接
+
 ## [1.1.0] - 2026-10-18
 
 首个正式版本。
