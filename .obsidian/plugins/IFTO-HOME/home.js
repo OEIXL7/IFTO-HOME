@@ -5062,15 +5062,9 @@ function renderDomainTree(treeData) {
         seen[f.path] = 1;
         entries.push({ node: f, leaf: true });
       }
+      // Only the pinned nodes themselves — never their descendants.
       for(var i=0;i<pinnedNodes.length;i++){
-        var nd = pinnedNodes[i];
-        addFolder(nd);
-        (function descend(node){
-          var fls = node.files || [];
-          for(var j=0;j<fls.length;j++) addFile(fls[j]);
-          var subs = node.subfolders || [];
-          for(var k=0;k<subs.length;k++) descend(subs[k]);
-        })(nd);
+        addFolder(pinnedNodes[i]);
       }
       var h = '<div class="dt-group dt-pinned-group">';
       h += '<div class="dt-group-head"><span class="dt-group-name">置顶目标</span><span class="dt-group-line"></span></div>';
@@ -5223,6 +5217,7 @@ function renderDomainTree(treeData) {
       if(kids.length === 0) gridHtml += '<div class="dt-none">暂无目标</div>';
       for(var k=0;k<kids.length;k++) gridHtml += cardHtml(kids[k], !!kids[k].leaf);
       body = '<div class="dt-groups">'
+        + buildPinnedRow()
         + '<div class="dt-detail-head">'
         + '<button class="dt-back" id="dtBack">\u2190 返回</button>'
         + '<span class="dt-detail-title">' + escHtml(node.name) + '</span>'
