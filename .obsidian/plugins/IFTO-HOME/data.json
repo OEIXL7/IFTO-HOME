@@ -41,17 +41,24 @@
   "widgetDeepseekEnabled": true,
   "widgetCalendarEnabled": true,
   "widgetHabitsEnabled": true,
-  "widgetOllamaEnabled": true,
-  "widgetRagflowEnabled": false,
   "widgetWeeknotesEnabled": true,
   "widgetTodotodayEnabled": true,
   "widgetMinimaxEnabled": false,
   "widgetWeeknotesPath": "000-信箱INBOX/040-笔记",
   "widgetTodotodoPath": "000-信箱INBOX/031-今日待办",
   "domainFolder": "300-领域AREA",
-  "pinnedAreas": [],
+  "archivePath": "500-归档资料/510-归档项目",
+  "inboxRoot": "000-信箱INBOX",
+  "workfileRoot": "200-工作库WORKFILE",
+  "projectFilesFolder": "200-工作库WORKFILE/201-项目文件",
+  "archiveRoot": "500-归档资料",
+  "draftFolder": "100-工作台WORKDESK/110-草稿箱",
+  "pinnedAreas": [
+    "300-领域AREA/301-事业/303-AI技术/工作流.md"
+  ],
   "zoom": 1,
   "bgColor": "",
   "borderRadius": 0,
-  "archivePath": "500-归档资料/510-归档项目"
+  "widgetOllamaEnabled": true,
+  "widgetRagflowEnabled": false
 }

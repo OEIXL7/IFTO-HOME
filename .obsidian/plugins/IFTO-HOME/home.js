@@ -5048,8 +5048,13 @@ function renderDomainTree(treeData) {
       var pinnedNodes = [];
       (function collect(list){
         for(var i=0;i<list.length;i++){
-          if(list[i].pinned) pinnedNodes.push(list[i]);
-          collect(list[i].subfolders || []);
+          var node = list[i];
+          if(node.pinned) pinnedNodes.push({ node: node, leaf: false });
+          var fls = node.files || [];
+          for(var j=0;j<fls.length;j++){
+            if(fls[j].pinned) pinnedNodes.push({ node: fls[j], leaf: true });
+          }
+          collect(node.subfolders || []);
         }
       })(treeData);
       if(pinnedNodes.length === 0) return '';
@@ -5064,7 +5069,8 @@ function renderDomainTree(treeData) {
       }
       // Only the pinned nodes themselves — never their descendants.
       for(var i=0;i<pinnedNodes.length;i++){
-        addFolder(pinnedNodes[i]);
+        if(pinnedNodes[i].leaf) addFile(pinnedNodes[i].node);
+        else addFolder(pinnedNodes[i].node);
       }
       var h = '<div class="dt-group dt-pinned-group">';
       h += '<div class="dt-group-head"><span class="dt-group-name">置顶目标</span><span class="dt-group-line"></span></div>';
