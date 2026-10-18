@@ -4424,29 +4424,77 @@ function setupDomainZoom() {
     applyDomainTransform();
   }, { passive: false });
 
-  // Middle-button drag → pan (on overlay)
+  // ---- Pan / zoom helpers (mouse + touch) ----
+  var _dragStartX = 0, _dragStartY = 0;
+  function panStart(x, y) {
+    dPanning = true;
+    _dragStartX = x; _dragStartY = y;
+    dPanStartX = x - dPanX; dPanStartY = y - dPanY;
+  }
+  function panMove(x, y) {
+    dPanX = x - dPanStartX;
+    dPanY = y - dPanStartY;
+    applyDomainTransform();
+  }
+  function panEnd() {
+    dPanning = false;
+    var ov = document.getElementById('domainTreeOverlay');
+    if(ov) ov.style.cursor = '';
+  }
+
+  // Mouse drag → pan (left or middle button)
   overlay.addEventListener('mousedown', function(e) {
     if(!domainMode) return;
-    if(e.button !== 1) return;
+    if(e.button !== 0 && e.button !== 1) return;
     e.preventDefault();
-    dPanning = true;
-    dPanStartX = e.clientX - dPanX;
-    dPanStartY = e.clientY - dPanY;
+    panStart(e.clientX, e.clientY);
     overlay.style.cursor = 'grabbing';
   });
-
   document.addEventListener('mousemove', function(e) {
     if(!dPanning || !domainMode) return;
-    dPanX = e.clientX - dPanStartX;
-    dPanY = e.clientY - dPanStartY;
-    applyDomainTransform();
+    panMove(e.clientX, e.clientY);
   });
+  document.addEventListener('mouseup', function() { if(dPanning) panEnd(); });
 
-  document.addEventListener('mouseup', function(e) {
-    if(!dPanning) return;
-    dPanning = false;
-    var overlay = document.getElementById('domainTreeOverlay');
-    if(overlay) overlay.style.cursor = '';
+  // Touch: one finger pans, two fingers pinch-zoom.
+  // Small movements stay as taps so sector clicks still work.
+  var _pinchDist0 = 0, _pinchZoom0 = 1;
+  overlay.addEventListener('touchstart', function(e) {
+    if(!domainMode) return;
+    if(e.touches.length === 1) {
+      panStart(e.touches[0].clientX, e.touches[0].clientY);
+    } else if(e.touches.length === 2) {
+      dPanning = false;
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      _pinchDist0 = Math.sqrt(dx*dx + dy*dy) || 1;
+      _pinchZoom0 = dZoom;
+    }
+  }, { passive: true });
+  overlay.addEventListener('touchmove', function(e) {
+    if(!domainMode) return;
+    if(e.touches.length === 1 && dPanning) {
+      var mx = e.touches[0].clientX - _dragStartX;
+      var my = e.touches[0].clientY - _dragStartY;
+      if(Math.abs(mx) + Math.abs(my) > 6) {
+        e.preventDefault();
+        panMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    } else if(e.touches.length === 2 && _pinchDist0 > 0) {
+      e.preventDefault();
+      var px = e.touches[0].clientX - e.touches[1].clientX;
+      var py = e.touches[0].clientY - e.touches[1].clientY;
+      var d = Math.sqrt(px*px + py*py) || 1;
+      dZoom = Math.round(Math.max(0.3, Math.min(3, _pinchZoom0 * d / _pinchDist0)) * 100) / 100;
+      applyDomainTransform();
+    }
+  }, { passive: false });
+  overlay.addEventListener('touchend', function(e) {
+    if(e.touches.length === 0) { dPanning = false; _pinchDist0 = 0; }
+    else if(e.touches.length === 1) {
+      _pinchDist0 = 0;
+      panStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
   });
 
   // Reset button
@@ -4485,7 +4533,7 @@ function toggleDomainMode() {
     heroImg.style.backgroundImage = 'none';
     heroImg.style.backgroundColor = 'var(--ifto-bg, #fff)';
     // Expand container to give the dashboard a comfortable height
-    var _expandH = (window.innerWidth < 700) ? 520 : 660;
+    var _expandH = (window.innerWidth < 700) ? 620 : 660;
     heroImg.style.minHeight = _expandH + 'px';
     var heroRight = heroImg.parentElement;
     if(heroRight) heroRight.style.minHeight = _expandH + 'px';

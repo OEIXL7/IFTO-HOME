@@ -1041,3 +1041,37 @@ body.theme-dark .ifto-container {
   .dt-card-name { font-size: 12.5px; }
   .dt-group-name { font-size: 12px; }
 }
+
+/* ====== Mobile portrait (手机竖屏) ====== */
+@media (max-width: 600px) {
+  /* --- 领域面板：给足空间，保证顶部切换按钮与缩放控件可见 --- */
+  .domain-tree-overlay { inset: 0 0 48px 0; }
+  .dt-board { padding: 10px 10px 0; }
+  .dt-summary { padding: 2px 0 8px; gap: 6px; align-items: center; }
+  .dt-sum-left { gap: 6px; flex-wrap: wrap; }
+  .dt-sum-meta { font-size: 10px; }
+  .dt-sum-bar { width: 52px; }
+  .dt-view-toggle { gap: 1px; margin: 0; }
+  .dt-view-btn { width: 28px; height: 28px; }
+  .dt-view-btn svg { width: 15px; height: 15px; }
+  .dt-title-ghost { display: none; }
+  .dt-title-main { font-size: 22px; letter-spacing: 2px; }
+  .dt-zoom-ctrl { bottom: 18px !important; right: 10px !important; }
+  .dt-zoom-btn { width: 32px; height: 32px; font-size: 18px; }
+  .dt-zoom-pct { font-size: 11px; min-width: 32px; }
+  .dt-groups { gap: 14px; padding-top: 12px; }
+  .dt-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+  .dt-card { padding: 10px 11px 9px; gap: 7px; }
+  .dt-card-name { font-size: 12.5px; }
+  .dt-card-meta { font-size: 10.5px; }
+  .dt-group-name { font-size: 12px; letter-spacing: .5px; }
+  .dt-group-head, .dt-detail-head { gap: 8px; margin-bottom: 10px; }
+  .dt-visual { padding: 6px 0 0; }
+  .dt-sun-svg { width: 100%; }
+  .dt-tree-row { padding: 7px 8px; gap: 8px; }
+  .dt-tree-name { font-size: 12.5px; }
+  .dt-tree-pct { width: 38px; font-size: 10.5px; }
+
+  /* --- 通用：压缩留白，避免拥挤 --- */
+  .ifto-container { font-size: 14px; }
+}

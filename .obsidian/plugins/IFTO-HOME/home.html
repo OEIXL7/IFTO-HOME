@@ -733,6 +733,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   .todo-item { height: auto; min-height: 60px; }
   .hero-right { min-height: 220px; }
   .footer { padding: 40px var(--section-pad) 30px; }
+
+  /* 导航：logo 独占一行，菜单横向滚动（不换行、不挤压） */
+  .nav { flex-wrap: wrap; min-height: auto; padding: 6px 8px; gap: 4px; justify-content: center; }
+  .nav-logo { flex: 0 0 100%; justify-content: center; margin-bottom: 2px; }
+  .nav-logo img { height: 26px; }
+  .nav-items { flex: 0 0 100%; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; gap: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .nav-items::-webkit-scrollbar { display: none; }
+  .nav-item { flex: 0 0 auto; white-space: nowrap; font-size: 11.5px; letter-spacing: .5px; padding: 4px 8px; }
+
+  /* 标签行：横向滚动，避免折成多行 */
+  .tabs { gap: 12px; margin-bottom: 12px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 3px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; white-space: nowrap; font-size: 14px; letter-spacing: 1px; }
+
+  /* 区块标题：缩小，减少留白 */
+  .section-title { font-size: 28px; letter-spacing: 3px; }
+  .section-title-wrap { margin: 36px 0 12px; }
+  .section-title-watermark { font-size: 22px; }
 }
 @media (max-width: 400px) {
   .shortcuts { grid-template-columns: 1fr; gap: 8px; }
