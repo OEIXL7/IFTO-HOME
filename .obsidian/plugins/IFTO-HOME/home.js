@@ -4534,9 +4534,28 @@ var dZoom = 1, dPanX = 0, dPanY = 0;
 var dPanning = false, dPanStartX = 0, dPanStartY = 0;
 
 function applyDomainTransform() {
-  // Transform ONLY the sunburst graphic — the AREA领域 header stays fixed.
+  // Pan uses transform (translating a bitmap stays crisp).
+  // Zoom uses the SVG viewBox instead of CSS scale(), so the browser re-renders
+  // the vector graphic at the new zoom level -> always crisp, no re-raster wait.
   var sun = document.querySelector('#domainTreeInner .dt-sun');
-  if(sun) sun.style.transform = 'translate(' + dPanX + 'px,' + dPanY + 'px) scale(' + dZoom + ')';
+  if(sun) {
+    sun.style.transform = 'translate(' + dPanX + 'px,' + dPanY + 'px)';
+    var svg = sun.querySelector('svg');
+    if(svg) {
+      var base = svg.getAttribute('data-base-viewbox');
+      if(!base) {
+        base = svg.getAttribute('viewBox') || '';
+        if(base) svg.setAttribute('data-base-viewbox', base);
+      }
+      var p = (base || '').split(/[\s,]+/).map(Number);
+      if(p.length === 4 && p.every(function(n){ return isFinite(n); })) {
+        var w = p[2], h = p[3];
+        var cx = p[0] + w / 2, cy = p[1] + h / 2;
+        var nw = w / dZoom, nh = h / dZoom;
+        svg.setAttribute('viewBox', (cx - nw / 2) + ' ' + (cy - nh / 2) + ' ' + nw + ' ' + nh);
+      }
+    }
+  }
   var pctEl = document.getElementById('domainZoomPct');
   if(pctEl) pctEl.textContent = Math.round(dZoom * 100) + '%';
 }
@@ -5012,7 +5031,9 @@ function renderDomainTree(treeData) {
         + '<span class="dt-sum-meta">' + totalAreas + ' 领域 · ' + totalTopics + ' 目标 · 总进度 ' + gp + '%</span>'
         + '<span class="dt-sum-bar"><i style="width:' + gp + '%"></i></span>'
         + '<span class="dt-view-toggle">'
-        + vb('cards', '卡片视图', '▦') + vb('sun', '圆扇形视图', '◔') + vb('tree', '树状图视图', '≣')
+        + vb('cards', '卡片视图', '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/></svg>')
+        + vb('sun', '圆扇形视图', '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3z"/></svg>')
+        + vb('tree', '树状图视图', '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg>')
         + '</span>'
         + '</span>'
         + '<span class="dt-title-wrap">'

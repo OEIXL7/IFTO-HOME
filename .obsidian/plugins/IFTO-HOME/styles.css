@@ -924,6 +924,7 @@ body.theme-dark .ifto-container {
 }
 .dt-view-btn:hover { background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
 .dt-view-btn.active { background: var(--ifto-divider, #e5e7eb); color: var(--ifto-text, #111); }
+.dt-view-btn svg { width: 14px; height: 14px; display: block; }
 
 .dt-pinned-group .dt-group-name { color: var(--ifto-text, #111); }
 .dt-pinned-group .dt-group-line { background: var(--ifto-text-3, #9ca3af); }
