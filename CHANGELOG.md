@@ -4,10 +4,13 @@
 
 ## [1.1.1] - 2026-10-18
 
-- 更新 versions.json: 1.1.1
-- 发布 IFTO-HOME 1.1.1
-- CHANGELOG: 移除已停用的 Ollama / Ragflow 小组件描述
-- 添加 CHANGELOG.md；README 增加版本徽章与更新日志链接
+### 移除
+
+- 清理已停用的 **Ollama / Ragflow** 功能残留代码（设置字段、首页状态页面、模型分页），插件体积减少约 26 KB
+
+### 修复
+
+- CHANGELOG 中移除了已停用功能的描述
 
 ## [1.1.0] - 2026-10-18
 
