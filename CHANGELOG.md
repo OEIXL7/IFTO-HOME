@@ -2,6 +2,12 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [1.1.2] - 2026-10-18
+
+- 更新 versions.json: 1.1.2
+- 发布 IFTO-HOME 1.1.2
+- CHANGELOG: 润色 1.1.1 条目
+
 ## [1.1.1] - 2026-10-18
 
 ### 移除
