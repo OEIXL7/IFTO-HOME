@@ -4534,26 +4534,26 @@ var dZoom = 1, dPanX = 0, dPanY = 0;
 var dPanning = false, dPanStartX = 0, dPanStartY = 0;
 
 function applyDomainTransform() {
-  // Pan uses transform (translating a bitmap stays crisp).
-  // Zoom uses the SVG viewBox instead of CSS scale(), so the browser re-renders
-  // the vector graphic at the new zoom level -> always crisp, no re-raster wait.
+  // Pan uses transform; zoom scales the SVG's rendered SIZE (not a bitmap
+  // scale and not the viewBox). The browser re-renders the vector at the new
+  // size -> always crisp, AND the element itself grows, so whatever overflows
+  // the viewport stays reachable by panning.
   var sun = document.querySelector('#domainTreeInner .dt-sun');
   if(sun) {
     sun.style.transform = 'translate(' + dPanX + 'px,' + dPanY + 'px)';
     var svg = sun.querySelector('svg');
     if(svg) {
-      var base = svg.getAttribute('data-base-viewbox');
-      if(!base) {
-        base = svg.getAttribute('viewBox') || '';
-        if(base) svg.setAttribute('data-base-viewbox', base);
+      var base = parseFloat(svg.getAttribute('data-base-width'));
+      if(!base || !isFinite(base) || base <= 0) {
+        var r = svg.getBoundingClientRect();
+        base = r.width || 720;
+        svg.setAttribute('data-base-width', base);
       }
-      var p = (base || '').split(/[\s,]+/).map(Number);
-      if(p.length === 4 && p.every(function(n){ return isFinite(n); })) {
-        var w = p[2], h = p[3];
-        var cx = p[0] + w / 2, cy = p[1] + h / 2;
-        var nw = w / dZoom, nh = h / dZoom;
-        svg.setAttribute('viewBox', (cx - nw / 2) + ' ' + (cy - nh / 2) + ' ' + nw + ' ' + nh);
-      }
+      svg.style.width = (base * dZoom) + 'px';
+      svg.style.height = 'auto';
+      svg.style.maxWidth = 'none';
+      svg.style.maxHeight = 'none';
+      svg.style.flexShrink = '0';
     }
   }
   var pctEl = document.getElementById('domainZoomPct');

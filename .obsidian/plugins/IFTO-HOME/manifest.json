@@ -1,7 +1,7 @@
 {
   "id": "ifto-home",
   "name": "IFTO-HOME",
-  "version": "1.1.0-beta.5",
+  "version": "1.1.0-beta.6",
   "minAppVersion": "0.15.0",
   "description": "INFOTOOLS 插件首页 — 快捷通道、收集、待办、项目、阅读笔记、复盘一体化",
   "author": "IFTO",
