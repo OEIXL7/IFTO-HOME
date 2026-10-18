@@ -1,11 +1,11 @@
 ---
-title:
+title: "{{title}}"
 description: ""
-created:
-  "{ date }":
+created: {{date}}
 tags:
-  - 
+  -
 related_to:
   -
 ---
 
+# {{title}}
