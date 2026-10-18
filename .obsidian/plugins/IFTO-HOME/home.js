@@ -5218,6 +5218,29 @@ document.getElementById('heroDomainLabel')?.addEventListener('click', function(e
   toggleDomainMode();
 });
 
+// 滚动到指定区块：定位最近的滚动容器并用容器坐标计算
+// （scrollIntoView 在 Obsidian 的嵌套容器里经常失效，导致"点了没反应"）
+function scrollToSection(id){
+  var el = document.getElementById(id);
+  if(id === 'home' || !el){
+    var pg = document.querySelector('.page') || document.scrollingElement || document.documentElement;
+    try { pg.scrollTo({top: 0, behavior: 'smooth'}); } catch(e) { pg.scrollTop = 0; }
+    return;
+  }
+  var sc = el.parentElement, container = null;
+  while(sc && sc !== document.body){
+    var st = window.getComputedStyle(sc);
+    if((st.overflowY === 'auto' || st.overflowY === 'scroll') && sc.scrollHeight > sc.clientHeight + 4){ container = sc; break; }
+    sc = sc.parentElement;
+  }
+  if(container){
+    var top = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - 8;
+    try { container.scrollTo({top: top, behavior: 'smooth'}); } catch(e) { container.scrollTop = top; }
+  } else {
+    try { el.scrollIntoView({behavior:'smooth', block:'start'}); } catch(e) { el.scrollIntoView(); }
+  }
+}
+
 // Nav active state
 var navClickActive = false;
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -5227,15 +5250,7 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
     this.classList.add('active');
     const id = this.getAttribute('href')?.replace('#','');
-    if(id){
-      if(id === 'home'){
-        var page = document.querySelector('.page');
-        if(page) page.scrollTo({top: 0, behavior: 'smooth'});
-      } else {
-        const target = document.getElementById(id);
-        if(target) target.scrollIntoView({behavior:'smooth'});
-      }
-    }
+    if(id) scrollToSection(id);
     setTimeout(function(){navClickActive=false},600);
   });
 });

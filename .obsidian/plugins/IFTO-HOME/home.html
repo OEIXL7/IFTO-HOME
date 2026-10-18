@@ -761,6 +761,34 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   .hero-title { font-size: 22px; }
   .hero-title-sub { display: none; }
 }
+/* ====== Mobile portrait：按移动端习惯重排（仅窄屏，不影响宽屏） ====== */
+@media (max-width: 600px) {
+  /* ① 顶部导航：吸顶、可点击、够大（≥40px 触摸区） */
+  .nav { position: sticky; top: 0; z-index: 200; background: var(--bg); border-bottom: 1px solid var(--g6); }
+  .nav-items { overflow-x: auto; }
+  .nav-item { min-height: 40px; display: inline-flex; align-items: center; padding: 8px 10px; }
+
+  /* ② 项目管理：横向滑动看板（保留看板形态，一屏一列） */
+  .project-cols { flex-direction: row !important; overflow-x: auto !important; gap: 10px !important; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 10px; }
+  .project-col { flex: 0 0 80vw !important; min-height: auto !important; max-height: none !important; scroll-snap-align: center; }
+  .project-col-title { font-size: 14px; }
+
+  /* ③ 快捷通道：两列、按钮紧凑 */
+  .shortcuts { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .btn-s { width: 100% !important; height: 56px !important; padding: 6px !important; }
+  .btn-s .s-icon { font-size: 15px; }
+  .btn-s .s-label { font-size: 12px; }
+
+  /* ④ 组件卡片：高度自适应，减少留白 */
+  .widget-card { min-height: 260px !important; }
+  .widget-indicators { margin-top: 6px; }
+
+  /* ⑤ 整体留白压缩 */
+  .section-title { font-size: 26px !important; letter-spacing: 2px !important; }
+  .section-title-wrap { margin: 32px 0 12px !important; }
+  .section-title-watermark { font-size: 20px !important; }
+}
+
 </style>
 </head>
 <body>
