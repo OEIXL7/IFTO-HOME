@@ -1,5 +1,9 @@
 # IFTO-HOME
 
+[![Release](https://img.shields.io/github/v/release/OEIXL7/IFTO-HOME?label=release&color=blue)](https://github.com/OEIXL7/IFTO-HOME/releases)
+[![Stars](https://img.shields.io/github/stars/OEIXL7/IFTO-HOME?color=yellow)](https://github.com/OEIXL7/IFTO-HOME/stargazers)
+[![Obsidian](https://img.shields.io/badge/Obsidian-plugin-7C3AED)](https://obsidian.md)
+
 > INFOTOOLS 插件首页 —— 快捷通道、收集、待办、项目、阅读笔记、复盘一体化。
 
 本仓库除 **IFTO-HOME 插件本体** 外，还包含一套 **适配该插件的 Obsidian 文件夹结构**，可以整体放入你的 vault 使用。
@@ -49,3 +53,7 @@
 | `home.js` / `home.html` | 首页视图 |
 | `styles.css` | 样式 |
 | `manifest.json` | 插件清单 |
+
+## 更新日志
+
+版本变更记录见 [CHANGELOG.md](./CHANGELOG.md)。
