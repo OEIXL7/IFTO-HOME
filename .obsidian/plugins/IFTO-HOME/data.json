@@ -34,10 +34,8 @@
   "shortcutTaskTemplate": "900-数据库/910-模板Templates/任务MISSiON",
   "shortcutNoteTemplate": "900-数据库/910-模板Templates/Note",
   "projectTaskTemplate": "900-数据库/910-模板Templates/任务MISSiON",
-  "ollamaUrl": "http://localhost:11434",
-  "ragflowUrl": "http://localhost:80",
   "minimaxApiUrl": "https://www.minimaxi.com/v1/token_plan/remains",
-  "widgetOrder": "calendar,deepseek,minimax,habits,ragflow,ollama,weeknotes,todotoday",
+  "widgetOrder": "calendar,deepseek,minimax,habits,weeknotes,todotoday",
   "widgetDeepseekEnabled": true,
   "widgetCalendarEnabled": true,
   "widgetHabitsEnabled": true,
@@ -58,7 +56,5 @@
   ],
   "zoom": 1,
   "bgColor": "",
-  "borderRadius": 0,
-  "widgetOllamaEnabled": true,
-  "widgetRagflowEnabled": false
+  "borderRadius": 0
 }
