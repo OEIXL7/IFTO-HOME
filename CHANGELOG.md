@@ -2,6 +2,13 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [1.1.6] - 2026-10-19
+
+- 更新 versions.json: 1.1.6
+- 发布 IFTO-HOME 1.1.6
+- 修复项目看板空白：projectCols 为空时回退默认三阶段
+- CHANGELOG: 润色 1.1.5 条目
+
 ## [1.1.5] - 2026-10-18
 
 ### 改进（仅手机竖屏，桌面宽屏不受影响）
