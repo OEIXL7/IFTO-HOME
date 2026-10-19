@@ -123,7 +123,7 @@ var _organizeProjectExpanded = [];
 function getInboxFolder() { return _getFolder('inboxFolder', '000-信箱INBOX/010-收集'); }
 function getQuickLearnFolder() { return _getFolder('quickLearnFolder', '100-工作台WORKDESK/101-快速学习'); }
 function getProjectBase() { return _getFolder('projectBase', '100-工作台WORKDESK/120-项目管理'); }
-function getProjectCols() { return (_getFolder('projectCols', '')).split(',').map(function(s){return s.trim();}).filter(function(s){return s;}); }
+function getProjectCols() { return (_getFolder('projectCols', '未开始,推进中,已完成')).split(',').map(function(s){return s.trim();}).filter(function(s){return s;}); }
 function getDraftFolder() { return _getFolder('draftFolder', '100-工作台WORKDESK/110-草稿箱'); }
 function _isDraftPath(path) {
   if (!path) return false;

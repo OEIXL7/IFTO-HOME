@@ -21,7 +21,7 @@
   "activityFolder": "000-信箱INBOX/030-活动清单",
   "taskFolder": "100-工作台WORKDESK/120-项目管理",
   "projectBase": "100-工作台WORKDESK/120-项目管理",
-  "projectCols": "",
+  "projectCols": "未开始,推进中,已完成",
   "bookFolder": "400-资源RESOURCE/420-览阅/421-书籍",
   "paperFolder": "400-资源RESOURCE/420-览阅/422-论文",
   "resourceRoot": "400-资源RESOURCE",
