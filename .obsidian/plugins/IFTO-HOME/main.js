@@ -942,7 +942,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .card-grid, .ifto-phone .note-grid, .ifto-phone .activity-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-auto-rows: minmax(80px, auto); align-content: start;
-  justify-items: stretch; gap: 7px 9px; padding: 10px; min-width: 0; width: 100%;
+  justify-items: stretch; row-gap: 14px !important; column-gap: 9px !important; padding: 10px; min-width: 0; width: 100%;
   background: var(--mobile-panel-bg); border: 0; min-height: 0; height: auto; overflow: visible; border-radius: 0 !important;
 }
 .ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid { min-height: 358px; }
@@ -1785,6 +1785,14 @@ function showToast(msg) {
   t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--g1);color:var(--bg);padding:8px 16px;font-size:12px;z-index:99999;transition:opacity .3s;font-family:var(--font)';
   document.body.appendChild(t);
   setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.remove(); },400); },2000);
+}
+
+function setTokenKey() {
+  if (typeof window.__IFTO_openSettings === 'function') {
+    window.__IFTO_openSettings();
+    return;
+  }
+  showToast('\u8BF7\u4ECE Obsidian \u8BBE\u7F6E\u4E2D\u6253\u5F00 IFTO-HOME \u8BBE\u7F6E');
 }
 
 async function loadResourceFolder() {
@@ -8890,6 +8898,16 @@ var IFTOPlugin = class extends import_obsidian.Plugin {
       callback: () => this.activateView()
     });
     this.addSettingTab(new IFTOSettingsTab(this.app, this));
+    const openIFTOSettings = () => {
+      this.app.setting.open();
+      this.app.setting.openTabById(this.manifest.id);
+    };
+    window.__IFTO_openSettings = openIFTOSettings;
+    this.register(() => {
+      if (window.__IFTO_openSettings === openIFTOSettings) {
+        delete window.__IFTO_openSettings;
+      }
+    });
     window.__IFTO_applyRadius = (radius) => {
       const v = typeof radius === "number" && radius >= 0 ? radius : 8;
       document.documentElement.style.setProperty("--ifto-radius", v + "px");

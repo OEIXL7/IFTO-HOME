@@ -367,6 +367,14 @@ function showToast(msg) {
   setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.remove(); },400); },2000);
 }
 
+function setTokenKey() {
+  if (typeof window.__IFTO_openSettings === 'function') {
+    window.__IFTO_openSettings();
+    return;
+  }
+  showToast('请从 Obsidian 设置中打开 IFTO-HOME 设置');
+}
+
 async function loadResourceFolder() {
   try {
     var list = document.getElementById('resourceFolderList');

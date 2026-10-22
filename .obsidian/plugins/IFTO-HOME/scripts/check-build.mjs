@@ -35,6 +35,9 @@ for (const phone of [true, false]) {
   assert.equal(container.style.zoom, phone ? '1' : '0.85', 'Phone scale independent of saved desktop zoom');
 }
 assert.equal((embedded.js.match(/data:image\/jpeg;base64,/g) || []).length, 4, 'All four bundled HOME covers are embedded for BRAT installs');
+assert.match(embedded.js, /function setTokenKey\(\)[\s\S]*?__IFTO_openSettings/, 'Missing API key action calls the settings bridge');
+assert.match(runtime, /openTabById\(this\.manifest\.id\)/, 'Settings bridge opens the IFTO-HOME settings tab');
+assert.match(css, /row-gap:\s*14px\s*!important/, 'Phone card grids keep a visible vertical gap');
 assert.match(runtime, /__IFTO_ACTIVE_CONTAINER\s*=\s*this\.containerEl/, 'Each view exposes its own root before scripts execute');
 assert.match(runtime, /ifto-mobile-script/, 'Phone controller loads in a separate script from home rendering');
 console.log('Build checks passed: isolated home/phone scripts, scoped view root, embedded resources and covers, plugin exports, cleanup, and platform-specific zoom.');

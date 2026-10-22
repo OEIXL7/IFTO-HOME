@@ -14,6 +14,14 @@ async (page) => {
   await page.goto('http://127.0.0.1:8765/?phone=1');
   await page.waitForSelector('.mobile-dock', { state: 'attached' });
   await settle();
+  await page.evaluate(() => {
+    window.__IFTO_settingsOpened = false;
+    window.__IFTO_openSettings = () => { window.__IFTO_settingsOpened = true; };
+    renderDeepSeekPage();
+  });
+  await page.locator('.token-setup-btn').click();
+  assert(await page.evaluate(() => window.__IFTO_settingsOpened), 'Missing API key action opens plugin settings');
+  await go('home');
   await page.waitForFunction(() => getComputedStyle(document.querySelector('#heroImage')).backgroundImage.includes('/home-cover/'));
   const defaultCoverBefore = await page.locator('#heroImage').evaluate(el => getComputedStyle(el).backgroundImage);
   assert(defaultCoverBefore.includes('/home-cover/'), 'Unconfigured HOME cover uses one of the bundled default images');
@@ -113,7 +121,11 @@ async (page) => {
       assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).flexWrap === 'wrap' && getComputedStyle(el).overflowY === 'visible'), 'Collect card tags wrap and remain fully visible');
       assert(await page.locator('#inboxGrid .card-detail .card-title').first().evaluate(el => { const s=getComputedStyle(el); return s.overflow === 'visible' && s.webkitLineClamp === 'none' && el.scrollHeight <= el.clientHeight + 1; }), 'Collect card titles are not clipped');
     }
-    if (id === 'inbox' || id === 'review') assert(await page.locator('#' + (id === 'inbox' ? 'inboxGrid' : 'reviewGrid')).evaluate(el => el.clientHeight === 358 && el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), id + ' cards scroll inside the fixed display area');
+    if (id === 'inbox' || id === 'review') {
+      const grid = page.locator('#' + (id === 'inbox' ? 'inboxGrid' : 'reviewGrid'));
+      assert(await grid.evaluate(el => el.clientHeight === 358 && el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), id + ' cards scroll inside the fixed display area');
+      assert(await grid.evaluate(el => parseFloat(getComputedStyle(el).rowGap) >= 14), id + ' cards have a clear vertical gap');
+    }
     if (id === 'note') assert(await page.locator('#noteGrid').evaluate(el => parseFloat(getComputedStyle(el).height) > parseFloat(getComputedStyle(document.querySelector('#area .dt-scroll')).height) && getComputedStyle(el).overflowY === 'auto'), 'Reading area is taller than AREA and scrolls overflow internally');
     if (id === 'area') assert(await page.locator('#area .dt-scroll').evaluate(el => el.clientHeight >= 220 && el.clientHeight <= 440 && getComputedStyle(el).overflowY === 'auto'), 'AREA cards scroll inside their fixed display area');
     if (id === 'todo') assert(await page.locator('#todoList').evaluate(el => Math.abs(el.getBoundingClientRect().height - 158) < 1 && getComputedStyle(el).overflowY === 'auto'), 'Today todo shows about three rows and scrolls overflow inside its fixed list');
