@@ -5,9 +5,14 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = async name => (await readFile(path.join(root, name), 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
-const [source, runtime, html, js, css, mobile] = await Promise.all(['main.ts','main.js','home.html','home.js','mobile.css','mobile.js'].map(read));
+const coverFiles = ['cover-01.jpg', 'cover-02.jpg', 'cover-03.jpg', 'cover-04.jpg'];
+const [source, runtime, html, js, css, mobile, ...covers] = await Promise.all([
+  ...['main.ts','main.js','home.html','home.js','mobile.css','mobile.js'].map(read),
+  ...coverFiles.map(name => readFile(path.join(root, 'assets', 'home-covers', name)))
+]);
+const coverBootstrap = 'window.__IFTO_DEFAULT_HERO_IMAGES=' + JSON.stringify(covers.map(buffer => 'data:image/jpeg;base64,' + buffer.toString('base64'))) + ';\n';
 const expectedHtml = html.replace('</head>', '<style id="ifto-mobile-styles">\n' + css + '\n</style>\n</head>');
-const expectedJs = js + '\n;\n' + mobile;
+const expectedJs = coverBootstrap + js + '\n;\n' + mobile;
 const inline = source.match(/\/\* __IFTO_INLINE_START__ \*\/([\s\S]*?)\/\* __IFTO_INLINE_END__ \*\//);
 assert(inline, 'TypeScript inline markers exist');
 const embedded = vm.runInNewContext(inline[1] + '\n({html:__IFTO_HOME_HTML,js:__IFTO_HOME_JS})');
@@ -27,4 +32,5 @@ for (const phone of [true, false]) {
   plugin.applyAppearance(container);
   assert.equal(container.style.zoom, phone ? '1' : '0.85', 'Phone scale independent of saved desktop zoom');
 }
-console.log('Build checks passed: embedded source/runtime resources, plugin exports, cleanup, and platform-specific zoom.');
+assert.equal((embedded.js.match(/data:image\/jpeg;base64,/g) || []).length, 4, 'All four bundled HOME covers are embedded for BRAT installs');
+console.log('Build checks passed: embedded source/runtime resources and covers, plugin exports, cleanup, and platform-specific zoom.');

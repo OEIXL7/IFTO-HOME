@@ -5,11 +5,15 @@ import path from 'node:path';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = async name => (await readFile(path.join(root, name), 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
-const [html, js, css, mobile, source] = await Promise.all([
-  read('home.html'), read('home.js'), read('mobile.css'), read('mobile.js'), read('main.ts')
+const coverFiles = ['cover-01.jpg', 'cover-02.jpg', 'cover-03.jpg', 'cover-04.jpg'];
+const [html, js, css, mobile, source, ...covers] = await Promise.all([
+  read('home.html'), read('home.js'), read('mobile.css'), read('mobile.js'), read('main.ts'),
+  ...coverFiles.map(file => readFile(path.join(root, 'assets', 'home-covers', file)))
 ]);
 const htmlBundle = html.replace('</head>', '<style id="ifto-mobile-styles">\n' + css + '\n</style>\n</head>');
-const jsBundle = js + '\n;\n' + mobile;
+const coverData = covers.map(buffer => 'data:image/jpeg;base64,' + buffer.toString('base64'));
+const coverBootstrap = 'window.__IFTO_DEFAULT_HERO_IMAGES=' + JSON.stringify(coverData) + ';\n';
+const jsBundle = coverBootstrap + js + '\n;\n' + mobile;
 const literal = value => JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 const inline = '/* __IFTO_INLINE_START__ */\nconst __IFTO_HOME_HTML = ' + literal(htmlBundle) + ';\nconst __IFTO_HOME_JS = ' + literal(jsBundle) + ';\n/* __IFTO_INLINE_END__ */';
 const marker = /\/\* __IFTO_INLINE_START__ \*\/[\s\S]*?\/\* __IFTO_INLINE_END__ \*\//;

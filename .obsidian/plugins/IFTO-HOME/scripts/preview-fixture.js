@@ -11,6 +11,7 @@
     widgetTodotodayEnabled: true, widgetDeepseekEnabled: false, widgetMinimaxEnabled: false, widgetWeeknotesEnabled: false
   };
   window.__IFTO_SETTINGS = settings;
+  window.__IFTO_DEFAULT_HERO_IMAGES = [0,1,2,3].map(function(index) { return '/home-cover/' + index + '.jpg'; });
   window.__fixture = { files: files, calls: calls };
   function put(p, fm) { files.set(p, { fm: fm || {}, ctime: Date.now() - files.size * 86400000, checked: false }); folders.add(p.slice(0, p.lastIndexOf('/'))); }
   for(var i=1;i<=19;i++) {

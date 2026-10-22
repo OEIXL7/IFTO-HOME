@@ -4325,11 +4325,32 @@ document.querySelectorAll('a.link-back[href="#home"]').forEach(function(link){
 });
 
 // ====== Hero image: random from folder or single URL ======
+var defaultHeroImageIndex = -1;
+function loadDefaultHeroImage() {
+  var bundledImages = window.__IFTO_DEFAULT_HERO_IMAGES;
+  if (!Array.isArray(bundledImages) || !bundledImages.length) return Promise.resolve('');
+  var choices = bundledImages.map(function(_, index) { return index; }).filter(function(index) { return index !== defaultHeroImageIndex; });
+  var index = choices[Math.floor(Math.random() * choices.length)] || 0;
+  return Promise.resolve({ index: index, url: bundledImages[index] }).then(function(result) {
+    if (!result || !result.url) return '';
+    defaultHeroImageIndex = Number.isInteger(result.index) ? result.index : defaultHeroImageIndex;
+    return result.url;
+  }).catch(function(error) {
+    console.error('IFTO: load default hero image error', error);
+    return '';
+  });
+}
+
 function loadHeroImage() {
   try {
     var heroImg = document.getElementById('heroImage');
     var settings = window.__IFTO_SETTINGS || {};
     if(!heroImg) return;
+    var useDefault = function() {
+      return loadDefaultHeroImage().then(function(url) {
+        if (url && heroImg.isConnected) heroImg.style.backgroundImage = 'url("' + url + '")';
+      });
+    };
     if(settings.heroImageFolder && typeof window.__IFTO_getRandomImageFromFolder === 'function') {
       window.__IFTO_getRandomImageFromFolder(settings.heroImageFolder).then(function(url){
         if(url) {
@@ -4338,21 +4359,23 @@ function loadHeroImage() {
           if(typeof window.__IFTO_resolveImageUrl === 'function') {
             window.__IFTO_resolveImageUrl(settings.heroImageUrl).then(function(url2){
               if(url2) heroImg.style.backgroundImage = 'url("' + url2 + '")';
+              else useDefault();
             });
           } else {
             heroImg.style.backgroundImage = 'url("' + settings.heroImageUrl + '")';
           }
-        }
+        } else useDefault();
       });
     } else if(settings.heroImageUrl) {
       if(typeof window.__IFTO_resolveImageUrl === 'function') {
         window.__IFTO_resolveImageUrl(settings.heroImageUrl).then(function(url){
           if(url) heroImg.style.backgroundImage = 'url("' + url + '")';
+          else useDefault();
         });
       } else {
         heroImg.style.backgroundImage = 'url("' + settings.heroImageUrl + '")';
       }
-    }
+    } else useDefault();
   } catch(e) { console.error('IFTO: loadHeroImage error', e); }
 }
 

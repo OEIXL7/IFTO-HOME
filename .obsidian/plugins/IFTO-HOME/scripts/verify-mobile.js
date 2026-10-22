@@ -14,6 +14,9 @@ async (page) => {
   await page.goto('http://127.0.0.1:8765/?phone=1');
   await page.waitForSelector('.mobile-dock', { state: 'attached' });
   await settle();
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('#heroImage')).backgroundImage.includes('/home-cover/'));
+  const defaultCoverBefore = await page.locator('#heroImage').evaluate(el => getComputedStyle(el).backgroundImage);
+  assert(defaultCoverBefore.includes('/home-cover/'), 'Unconfigured HOME cover uses one of the bundled default images');
   assert(await page.locator('.mobile-panel').count() === 7, 'Seven phone pages');
   assert(await page.locator('.mobile-dock .btn-s').count() === 4, 'Four shared creation buttons');
   assert(await page.locator('#s-collect').count() === 1, 'No duplicated shortcut IDs');
@@ -53,6 +56,9 @@ async (page) => {
   assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const r=el.getBoundingClientRect(), root=document.querySelector('.ifto-container.ifto-phone'), frame=root.closest('.workspace-leaf-content')||(root.closest('.view-content')&&root.closest('.view-content').parentElement)||root.parentElement||root; return Math.abs(r.right-frame.getBoundingClientRect().right)<1 && Math.abs(r.width-84)<1 && Math.abs(r.height-225)<1; }), 'Logo control matches the visible artwork and reaches the outer Obsidian pane edge');
   assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden && el.querySelector('#heroImage')), 'Home opens on the configured cover image');
   assert(await page.locator('.mobile-home-cover').evaluate(el => getComputedStyle(el).boxShadow === 'none'), 'Home cover image has no bottom shadow');
+  await page.locator('#heroRefreshLabel').click(); await settle();
+  const defaultCoverAfter = await page.locator('#heroImage').evaluate(el => getComputedStyle(el).backgroundImage);
+  assert(defaultCoverAfter.includes('/home-cover/') && defaultCoverAfter !== defaultCoverBefore, 'Change-mood action advances to another bundled default cover');
   assert(await page.locator('#heroImage').evaluate(el => getComputedStyle(el, '::before').content !== 'none' && getComputedStyle(el, '::before').backgroundColor === 'rgb(255, 255, 255)'), 'Home cover cuts out a page-colored lower-left label area');
   assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const s=getComputedStyle(el); return s.backgroundColor === 'rgba(0, 0, 0, 0)' && s.borderWidth === '0px' && s.boxShadow === 'none'; }), 'Logo touch target has no visible background plate');
   assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r=el.getBoundingClientRect(), root=document.querySelector('.ifto-container.ifto-phone'), frame=root.closest('.workspace-leaf-content')||(root.closest('.view-content')&&root.closest('.view-content').parentElement)||root.parentElement||root; return r.height >= 224 && Math.abs(r.right-frame.getBoundingClientRect().right)<1; }), 'Black IFTO artwork touches the outer pane edge at 1.5x its previous display size');

@@ -34,7 +34,14 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); return;
     }
     if (url.pathname === '/styles.css') { res.setHeader('Content-Type', 'text/css'); res.end(await readView('styles.css')); return; }
+    const coverMatch = url.pathname.match(/^\/home-cover\/(\d)\.jpg$/);
+    if (coverMatch && Number(coverMatch[1]) < 4) {
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.end(await read('assets/home-covers/cover-0' + (Number(coverMatch[1]) + 1) + '.jpg'));
+      return;
+    }
     res.statusCode = 404; res.end('Not found');
   } catch (err) { res.statusCode = 500; res.end(String(err)); }
 });
-server.listen(8765, '127.0.0.1', () => console.log('Fixture preview: http://127.0.0.1:8765/?phone=1 (no real vault access)'));
+const port = Number(process.env.IFTO_PREVIEW_PORT || 8765);
+server.listen(port, '127.0.0.1', () => console.log('Fixture preview: http://127.0.0.1:' + port + '/?phone=1 (no real vault access)'));
