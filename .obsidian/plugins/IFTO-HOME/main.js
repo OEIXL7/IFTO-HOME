@@ -953,7 +953,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   height: 358px; max-height: 358px; overflow-x: hidden; overflow-y: auto;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
-.ifto-phone #noteGrid.note-grid { height: clamp(220px, calc(100dvh - 380px), 440px); max-height: clamp(220px, calc(100dvh - 380px), 440px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.ifto-phone #note > div[style*="margin-bottom"] { display: none !important; }
+.ifto-phone #noteGrid.note-grid { height: clamp(180px, calc(100dvh - 520px), 320px); max-height: clamp(180px, calc(100dvh - 520px), 320px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .ifto-phone .card, .ifto-phone .card-detail, .ifto-phone .card-sm,
 .ifto-phone .note-card, .ifto-phone .note-card-paper, .ifto-phone .note-add-btn {
   position: relative; width: 100%; max-width: 100%; min-width: 0; margin-inline: auto;
@@ -1068,7 +1069,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .project-archive-zone { display: none !important; }
 .ifto-phone .project-archive-drop, .ifto-phone .mobile-archive-button { display: none !important; }
 .ifto-phone #project > div:nth-child(2) { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px !important; }
-.ifto-phone .btn-project-new { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; height: auto; padding: 8px 2px; border: 0; border-radius: 0 !important; background: transparent; box-shadow: none; font-size: 16px; white-space: nowrap; }
+.ifto-phone .btn-project-new { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; height: auto; padding: 8px 2px; border: 0; border-radius: 0 !important; background: transparent; box-shadow: none; font-size: 14px; white-space: nowrap; }
 .ifto-phone .btn-project-new::before { display: none; }
 .ifto-phone .btn-project-new::after { position: absolute; left: 0; right: 0; bottom: 3px; height: 1px; content: ''; background: var(--g1); opacity: 0; }
 .ifto-phone .btn-project-new:active::after, .ifto-phone .btn-project-new:focus-visible::after { opacity: 1; }
