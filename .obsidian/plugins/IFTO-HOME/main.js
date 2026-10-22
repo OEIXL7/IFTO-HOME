@@ -1123,6 +1123,61 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone input:not([type="checkbox"]), .ifto-phone textarea, .ifto-phone select { font-size: 16px; }
 .ifto-phone .mobile-sheet .mobile-sheet-danger { color: var(--text-error, #d44); }
 .ifto-phone .mobile-sheet .mobile-sheet-cancel { text-align: center; margin-top: 10px; border: 0; background: var(--g6); }
+
+/* Final phone polish from device review. */
+.ifto-container.ifto-phone { --ifto-brand-width: 100px; --ifto-brand-height: 300px; }
+.ifto-phone .mobile-brand-toggle {
+  appearance: none !important; -webkit-appearance: none !important;
+  background: transparent !important; background-color: transparent !important; background-image: none !important;
+  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  outline: none; filter: none !important;
+}
+.ifto-phone .mobile-brand-mark {
+  width: var(--ifto-brand-height) !important; height: var(--ifto-brand-width) !important;
+  object-fit: fill !important; background: transparent !important; border: 0 !important;
+  box-shadow: none !important; filter: none !important;
+}
+.theme-dark .ifto-phone .mobile-brand-mark { filter: brightness(0) invert(1) !important; }
+.ifto-phone .mobile-home-heading {
+  position: absolute; z-index: 2; top: 0; left: 0; width: 100%; height: 98px;
+}
+.ifto-phone .mobile-home-heading .hero-watermark,
+.ifto-phone .mobile-home-heading .hero-brand {
+  position: absolute; top: auto !important; bottom: 0; margin: 0 !important;
+  line-height: 1 !important;
+}
+.ifto-phone .mobile-home-heading .hero-watermark { left: 11px; font-weight: 350; }
+.ifto-phone .mobile-home-heading .hero-brand { left: 13px; }
+.ifto-phone .section-title-wrap .section-title { font-weight: 350 !important; }
+.ifto-phone .mobile-home-cover { box-shadow: none !important; }
+.ifto-phone #heroImage.mobile-cover-image::before {
+  content: ''; position: absolute; z-index: 5; left: 0; bottom: 0; width: 112px; height: 52px;
+  background: var(--ifto-bg, var(--bg, #fff)); pointer-events: none;
+}
+.ifto-phone #heroRefreshLabel { z-index: 6; }
+.ifto-phone #project .btn-project-new {
+  border: 1px solid var(--ifto-divider) !important; background: var(--ifto-card-bg) !important;
+  box-shadow: none !important;
+}
+.ifto-phone #project .btn-project-new:active,
+.ifto-phone #project .btn-project-new:focus-visible { border-color: var(--g1) !important; }
+.ifto-phone .mobile-page-watermark {
+  min-height: 30px; padding: 3px 0; box-sizing: border-box;
+  background: #fff !important; opacity: 1; z-index: 1;
+}
+.theme-dark .ifto-phone .mobile-page-watermark { background: #000 !important; }
+.ifto-phone .mobile-page-watermark img { opacity: .16; }
+.ifto-phone .mobile-page-watermark span { opacity: .55; }
+.ifto-phone .todo-item .todo-text,
+.ifto-phone .activity-grid .card-sm-title { font-size: 12px !important; line-height: 1.4 !important; }
+.ifto-phone .activity-grid .card-sm {
+  display: flex; align-items: center; justify-content: center;
+}
+.ifto-phone .activity-grid .card-sm > div { align-items: center !important; }
+.ifto-phone .activity-grid .card-sm > :not(.mobile-more) { align-self: center; }
+@media (max-height: 600px) {
+  .ifto-container.ifto-phone { --ifto-brand-width: 56px; --ifto-brand-height: 180px; }
+}
 .ifto-phone .ifto-confirm-overlay { z-index: 1100; }
 @media (max-width: 350px) {
   .ifto-phone .mobile-panel { padding-right: 10px; padding-left: 10px; }
@@ -6755,6 +6810,16 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   var heroImageParent = heroImage && heroImage.parentNode;
   var heroImageNext = heroImage && heroImage.nextSibling;
   var homeLeft = root.querySelector('#home .hero-left');
+  var home = root.querySelector('#home');
+  var homeWatermark = root.querySelector('#home .hero-watermark');
+  var homeBrand = root.querySelector('#home .hero-brand');
+  if (home && homeWatermark && homeBrand) {
+    var homeHeading = document.createElement('div');
+    homeHeading.className = 'mobile-home-heading';
+    home.insertBefore(homeHeading, home.firstChild);
+    homeHeading.appendChild(homeWatermark);
+    homeHeading.appendChild(homeBrand);
+  }
   var widgetCard = root.querySelector('#widgetCard');
   var widgetDots = root.querySelector('#widgetDots');
   var coverSlide = null, homeCoverActive = true;

@@ -47,9 +47,15 @@ async (page) => {
   assert(headingTops.every(top => Math.abs(top - homeHeadingTop) <= 8), 'All page headings align with the HOME heading position');
   assert(titleBaselines.every(delta => delta <= 1), 'English watermark and foreground title share one baseline');
   assert(await page.locator('#inbox .section-title-wrap').evaluate(w => parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize) >= 60 && parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize) <= 48), 'Background English headings retain their original larger size');
+  assert(await page.locator('#inbox .section-title-wrap').evaluate(w => getComputedStyle(w.querySelector('.section-title')).fontWeight === getComputedStyle(document.querySelector('.hero-watermark')).fontWeight), 'Section English title weight matches HOME IFTO');
   assert(await page.locator('#heroRefreshLabel').evaluate(el => getComputedStyle(el).borderRadius === '0px'), 'Cover refresh label keeps square corners');
   assert(await page.locator('.mobile-brand-toggle').evaluate(el => parseFloat(getComputedStyle(el).width) >= 80), 'Logo tap target matches the enlarged artwork and remains edge aligned');
   assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden && el.querySelector('#heroImage')), 'Home opens on the configured cover image');
+  assert(await page.locator('.mobile-home-cover').evaluate(el => getComputedStyle(el).boxShadow === 'none'), 'Home cover image has no bottom shadow');
+  assert(await page.locator('#heroImage').evaluate(el => getComputedStyle(el, '::before').content !== 'none' && getComputedStyle(el, '::before').backgroundColor === 'rgb(255, 255, 255)'), 'Home cover cuts out a page-colored lower-left label area');
+  assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const s=getComputedStyle(el); return s.backgroundColor === 'rgba(0, 0, 0, 0)' && s.borderWidth === '0px' && s.boxShadow === 'none'; }), 'Logo touch target has no visible background plate');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 300 && Math.abs(el.getBoundingClientRect().right - innerWidth) < 1), 'Black IFTO artwork is enlarged and touches the right edge');
+  assert(await page.locator('.mobile-page-watermark').evaluate(el => getComputedStyle(el).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(el).opacity === '1'), 'Bottom watermark sits on an opaque light-theme plate');
   assert(await page.locator('#widgetCard').evaluate(el => el.hidden), 'First home slide hides widgets behind the cover');
   assert(await page.locator('#widgetDots .mobile-cover-dot.active').count() === 1, 'Cover image is the active first carousel page');
   const homeGeometry = await page.evaluate(() => ({
@@ -148,7 +154,10 @@ async (page) => {
   assert(projectScroll.overflow === 'visible' && projectScroll.scroll <= projectScroll.height + 1 && projectScroll.children >= 14, 'Project status content stays expanded for page-level scrolling ' + JSON.stringify(projectScroll));
   assert(await page.locator('#projectArchiveZone').evaluate(el => getComputedStyle(el).display === 'none'), 'Phone project view hides the dashed archive rail');
   assert(await page.locator('#project .btn-project-new').first().evaluate(el => getComputedStyle(el, '::before').display === 'none' && getComputedStyle(el, '::after').opacity === '0'), 'Project creation labels have no permanent top or bottom rules');
+  assert(await page.locator('#project .btn-project-new').first().evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth) >= 1 && getComputedStyle(el).borderTopColor !== 'rgba(0, 0, 0, 0)'), 'Project creation labels have a visible border');
   await go('todo');
+  assert(await page.locator('#todoList .todo-text').first().evaluate(el => getComputedStyle(el).fontSize === getComputedStyle(document.querySelector('#activityGrid .card-sm-title')).fontSize), 'Today todo and activity cards use matching text sizes');
+  assert(await page.locator('#activityGrid .card-sm:not(.add-card)').first().evaluate(el => { const title=el.querySelector('.card-sm-title'); if (!title) return false; const a=el.getBoundingClientRect(), b=title.getBoundingClientRect(); return Math.abs((a.top+a.bottom)/2-(b.top+b.bottom)/2) < 8; }), 'Activity card text is vertically centered');
   const cb = page.locator('#todoList .cb').first();
   const openedBefore = await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'open').length);
   await cb.click(); await settle();
@@ -263,6 +272,7 @@ async (page) => {
   }
   await page.setViewportSize({width:375,height:813});
   await page.goto('http://127.0.0.1:8765/?phone=1&theme=dark');
+  assert(await page.locator('.mobile-page-watermark').evaluate(el => getComputedStyle(el).backgroundColor === 'rgb(0, 0, 0)' && getComputedStyle(el).opacity === '1'), 'Bottom watermark sits on an opaque dark-theme plate');
   await go('area'); await page.waitForSelector('.dt-card');
   await page.waitForTimeout(200);
   await page.screenshot({path:'output/playwright/mobile-area-dark.png',scale:'css'});

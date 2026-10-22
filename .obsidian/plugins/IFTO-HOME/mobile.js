@@ -40,6 +40,16 @@
   var heroImageParent = heroImage && heroImage.parentNode;
   var heroImageNext = heroImage && heroImage.nextSibling;
   var homeLeft = root.querySelector('#home .hero-left');
+  var home = root.querySelector('#home');
+  var homeWatermark = root.querySelector('#home .hero-watermark');
+  var homeBrand = root.querySelector('#home .hero-brand');
+  if (home && homeWatermark && homeBrand) {
+    var homeHeading = document.createElement('div');
+    homeHeading.className = 'mobile-home-heading';
+    home.insertBefore(homeHeading, home.firstChild);
+    homeHeading.appendChild(homeWatermark);
+    homeHeading.appendChild(homeBrand);
+  }
   var widgetCard = root.querySelector('#widgetCard');
   var widgetDots = root.querySelector('#widgetDots');
   var coverSlide = null, homeCoverActive = true;

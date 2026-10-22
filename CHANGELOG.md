@@ -3,6 +3,17 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [1.2.7] - 2026-10-22
+
+### 手机端真机细节修正
+
+- HOME 封面去除底部阴影，并为“换个心情”标签做页面底色缺口；首页 IFTO/INFOTOOLS 视觉底部对齐。
+- 放大黑色 IFTO 图案本身，触控区域背景透明并贴齐右边；标题英文底字字重与 HOME IFTO 一致。
+- 底部水印加白/黑主题底板；PROJECT 新建按钮增加边框。
+- 统一 TODO 与活动卡片字号，活动内容垂直居中。
+- `npm run build`、`npm run check` 通过；Playwright/Edge 手机与桌面回归 164 项通过。
+
+
 ## [1.2.6] - 2026-10-22
 
 ### 手机端截图反馈修正
