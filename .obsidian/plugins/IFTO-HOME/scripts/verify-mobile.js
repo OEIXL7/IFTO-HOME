@@ -40,11 +40,12 @@ async (page) => {
   assert(Math.abs(await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().top) - logoTop) < 1, 'IFTO logo stays fixed while page content scrolls');
   await go('home');
   await page.locator('.mobile-brand-toggle').click();
-  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight), 'Brand tap opens an on-screen shortcut panel');
+  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight && el.getBoundingClientRect().width <= 155), 'Brand tap opens a compact on-screen shortcut panel');
+  assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).transitionDuration.split(',').some(duration => parseFloat(duration) >= .2)), 'Shortcut panel expands with a transition');
   const shortcutTops = await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.map(el => el.getBoundingClientRect().top));
   assert(shortcutTops.every((top, i) => i === 0 || top > shortcutTops[i - 1]), 'Shortcut actions stack vertically');
   await page.keyboard.press('Escape');
-  assert(await page.locator('.mobile-dock').evaluate(el => el.hidden), 'Escape closes the shortcut panel');
+  assert(await page.locator('.mobile-dock').evaluate(el => el.getAttribute('aria-hidden') === 'true'), 'Escape closes the shortcut panel');
   const widgetBefore = await page.evaluate(() => curWidget);
   await page.locator('#widgetNext').click();
   assert(await page.evaluate(before => curWidget !== before && document.querySelector('.ifto-phone').dataset.mobilePage === 'home', widgetBefore), 'Widget arrows do not navigate pages');

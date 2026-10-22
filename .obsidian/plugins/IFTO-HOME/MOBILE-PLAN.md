@@ -57,6 +57,8 @@
 
 - 1.2.1 构建检查通过，Playwright + Edge 手机模拟 **127 项检查全部通过**，无未捕获浏览器错误；覆盖标识固定、纵向按钮、短屏横屏和桌面回归。快捷面板预览保存在 `output/playwright/mobile-shortcut-panel.png`。
 
+- 1.2.2 构建检查通过，Playwright + Edge 手机模拟 **128 项检查全部通过**，无未捕获浏览器错误；验证紧凑矩形展开、按钮依次出现、短屏横屏及桌面回归。预览见 `output/playwright/mobile-shortcut-panel.png`。
+
 ## 待真机确认
 
 - [ ] 手机 Obsidian 的宿主工具栏、刘海/底部安全区。

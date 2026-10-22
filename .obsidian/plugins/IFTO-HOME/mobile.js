@@ -66,9 +66,10 @@
   });
   root.appendChild(dock);
 
+  var shortcutOpen = false, shortcutHideTimer = 0;
   var brandToggle = button('', function(e) {
     e.preventDefault(); e.stopPropagation();
-    setShortcutsOpen(dock.hidden);
+    setShortcutsOpen(!shortcutOpen);
   }, 'mobile-brand-toggle');
   brandToggle.setAttribute('aria-label', '打开快捷通道');
   brandToggle.setAttribute('aria-expanded', 'false');
@@ -82,12 +83,22 @@
   }
   root.appendChild(brandToggle);
   function setShortcutsOpen(open) {
-    dock.hidden = !open;
+    shortcutOpen = open;
+    window.clearTimeout(shortcutHideTimer);
+    if (open) {
+      dock.hidden = false;
+      dock.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(function() { if (shortcutOpen) dock.classList.add('is-open'); });
+    } else {
+      dock.classList.remove('is-open');
+      dock.setAttribute('aria-hidden', 'true');
+      shortcutHideTimer = window.setTimeout(function() { if (!shortcutOpen) dock.hidden = true; }, 260);
+    }
     brandToggle.setAttribute('aria-expanded', String(open));
     brandToggle.setAttribute('aria-label', open ? '关闭快捷通道' : '打开快捷通道');
   }
   on(root, 'click', function(e) {
-    if (!dock.hidden && !dock.contains(e.target) && !brandToggle.contains(e.target)) setShortcutsOpen(false);
+    if (shortcutOpen && !dock.contains(e.target) && !brandToggle.contains(e.target)) setShortcutsOpen(false);
   });
   on(root, 'keydown', function(e) {
     if (e.key === 'Escape' && !dock.hidden) { setShortcutsOpen(false); brandToggle.focus(); }
@@ -442,6 +453,7 @@
   navigate('home');
   window.__IFTO_mobileCleanup = function() {
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
+    window.clearTimeout(shortcutHideTimer);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
     dock.remove(); brandToggle.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
