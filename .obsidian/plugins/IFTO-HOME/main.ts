@@ -1425,6 +1425,14 @@ export class IFTOView extends ItemView {
     const cleanup = (this.containerEl as any).__IFTO_mobileCleanup;
     if (typeof cleanup === 'function') cleanup();
     if ((window as any).__IFTO_ACTIVE_CONTAINER === this.containerEl) (window as any).__IFTO_ACTIVE_CONTAINER = null;
+    const homeScript = document.getElementById('ifto-home-script');
+    if (homeScript) homeScript.remove();
+    const mobileScript = document.getElementById('ifto-mobile-script');
+    if (mobileScript) mobileScript.remove();
+    this.isActive = false;
+    // Obsidian can keep the workspace leaf around when a plugin is disabled.
+    // Remove stale DOM so re-enabling the plugin cannot mistake it for a live view.
+    this.containerEl.empty();
   }
 
   private async createCollectionNote() {
@@ -1552,6 +1560,31 @@ export default class IFTOPlugin extends Plugin {
     await this.loadSettings();
 
     this.registerView(IFTO_VIEW_TYPE, (leaf) => new IFTOView(leaf, this));
+    this.register(() => {
+      const root = (window as any).__IFTO_ACTIVE_CONTAINER as HTMLElement | null;
+      const cleanup = (window as any).__IFTO_mobileCleanup;
+      if (typeof cleanup === 'function') cleanup();
+      if (root) root.empty();
+      document.getElementById('ifto-home-script')?.remove();
+      document.getElementById('ifto-mobile-script')?.remove();
+      if ((window as any).__IFTO_ACTIVE_CONTAINER === root) (window as any).__IFTO_ACTIVE_CONTAINER = null;
+      delete (window as any).__IFTO_leafActive;
+      (window as any).__IFTO_MOBILE_ACTIVE = false;
+      (window as any).__IFTO_MOBILE_OWNER = null;
+      (window as any).__IFTO_mobileCleanup = null;
+      (window as any).__IFTO_mobileNavigate = null;
+    });
+
+    // A disabled plugin may leave its workspace leaf in place with an empty
+    // or stale canvas. Reopen that existing leaf after layout restoration so
+    // the view runs onOpen again and rebuilds its DOM and mobile controller.
+    this.app.workspace.onLayoutReady(() => {
+      if (this.app.workspace.getLeavesOfType(IFTO_VIEW_TYPE).length) {
+        void this.activateView().catch((error) => {
+          console.error('IFTO: Failed to restore the homepage view', error);
+        });
+      }
+    });
 
     this.addRibbonIcon('blocks', 'IFTO-HOME 首页', () => {
       this.activateView();

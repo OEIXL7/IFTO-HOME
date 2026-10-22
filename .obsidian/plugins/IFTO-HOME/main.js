@@ -8871,6 +8871,12 @@ var IFTOView = class extends import_obsidian.ItemView {
     const cleanup = this.containerEl.__IFTO_mobileCleanup;
     if (typeof cleanup === "function") cleanup();
     if (window.__IFTO_ACTIVE_CONTAINER === this.containerEl) window.__IFTO_ACTIVE_CONTAINER = null;
+    const homeScript = document.getElementById("ifto-home-script");
+    if (homeScript) homeScript.remove();
+    const mobileScript = document.getElementById("ifto-mobile-script");
+    if (mobileScript) mobileScript.remove();
+    this.isActive = false;
+    this.containerEl.empty();
   }
   async createCollectionNote() {
     const folder = this.plugin.settings.inboxFolder || "000-\u4FE1\u7BB1INBOX/010-\u6536\u96C6";
@@ -8963,6 +8969,28 @@ var IFTOPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerView(IFTO_VIEW_TYPE, (leaf) => new IFTOView(leaf, this));
+    this.register(() => {
+      var _a, _b;
+      const root = window.__IFTO_ACTIVE_CONTAINER;
+      const cleanup = window.__IFTO_mobileCleanup;
+      if (typeof cleanup === "function") cleanup();
+      if (root) root.empty();
+      (_a = document.getElementById("ifto-home-script")) == null ? void 0 : _a.remove();
+      (_b = document.getElementById("ifto-mobile-script")) == null ? void 0 : _b.remove();
+      if (window.__IFTO_ACTIVE_CONTAINER === root) window.__IFTO_ACTIVE_CONTAINER = null;
+      delete window.__IFTO_leafActive;
+      window.__IFTO_MOBILE_ACTIVE = false;
+      window.__IFTO_MOBILE_OWNER = null;
+      window.__IFTO_mobileCleanup = null;
+      window.__IFTO_mobileNavigate = null;
+    });
+    this.app.workspace.onLayoutReady(() => {
+      if (this.app.workspace.getLeavesOfType(IFTO_VIEW_TYPE).length) {
+        void this.activateView().catch((error) => {
+          console.error("IFTO: Failed to restore the homepage view", error);
+        });
+      }
+    });
     this.addRibbonIcon("blocks", "IFTO-HOME \u9996\u9875", () => {
       this.activateView();
     });
