@@ -837,6 +837,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
   --ifto-brand-width: 84px;
   --ifto-brand-height: 225px;
+  --mobile-english-title-size: clamp(48px, 17vw, 72px);
   --mobile-panel-bg: var(--g6, #f2f2f2);
   position: relative; overflow: visible !important; overscroll-behavior-x: none;
   min-width: 0;
@@ -865,6 +866,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   overflow-x: auto; overflow-y: hidden; gap: 13px; padding: 5px 0;
   width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-y;
 }
+.ifto-phone .header .nav-items { position: relative; top: 6px; }
 .ifto-phone .nav-items::-webkit-scrollbar { display: none; }
 .ifto-phone .nav-item {
   flex: 0 0 auto !important; display: inline-flex; align-items: center; justify-content: center;
@@ -907,7 +909,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   letter-spacing: -1px !important; white-space: nowrap; transform: none !important;
 }
 .ifto-phone .section-title-wrap .section-title {
-  font-size: clamp(48px, 17vw, 72px) !important;
+  font-size: var(--mobile-english-title-size) !important;
   font-weight: 400; opacity: .22; color: var(--g4); align-self: auto;
 }
 .ifto-phone .section-title-watermark { font-size: clamp(29px, 11.4vw, 48px) !important; font-weight: 300; color: var(--g1); }
@@ -1091,6 +1093,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(2) { transition-delay: 85ms; }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(3) { transition-delay: 125ms; }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(4) { transition-delay: 165ms; }
+.ifto-phone .mobile-dock .mobile-return-home {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 42px;
+  margin-top: 7px; padding: 0 8px; border: 1px solid var(--g6); border-radius: 0;
+  background: var(--ifto-card-bg); box-shadow: none; color: var(--g1); font-size: 15px;
+  letter-spacing: 0; opacity: 0; transform: translateY(-4px);
+  transition: opacity 150ms ease, transform 180ms ease;
+}
+.ifto-phone .mobile-dock.is-open .mobile-return-home { opacity: 1; transform: translateY(0); transition-delay: 205ms; }
 .ifto-phone .mobile-dock .s-label { font-size: 15px !important; letter-spacing: 0; }
 .ifto-phone .mobile-dock .s-icon { position: absolute; left: 14px; font-size: 20px !important; font-weight: 300; }
 .ifto-phone .card-add, .ifto-phone .card-sm.add-card, .ifto-phone .note-add-btn { gap: 3px !important; }
@@ -1148,7 +1158,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   position: absolute; top: auto !important; bottom: 0; margin: 0 !important;
   line-height: 1 !important;
 }
-.ifto-phone .mobile-home-heading .hero-watermark { left: 11px; font-size: clamp(48px, 19.2vw, 72px); font-weight: 350; }
+.ifto-phone .mobile-home-heading .hero-watermark { left: 11px; font-size: var(--mobile-english-title-size) !important; font-weight: 350; }
 .ifto-phone .mobile-home-heading .hero-brand { left: 13px; }
 .ifto-phone .section-title-wrap .section-title { font-weight: 350 !important; }
 .ifto-phone .mobile-home-cover { box-shadow: none !important; }
@@ -6878,6 +6888,8 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^\u65B0\u5EFA/, '');
   });
   root.appendChild(dock);
+  var returnHomeButton = button('\u8FD4\u56DE\u9996\u9875', function() { navigate('home'); }, 'mobile-return-home');
+  dock.appendChild(returnHomeButton);
 
   var shortcutOpen = false, shortcutHideTimer = 0;
   var brandToggle = button('', function(e) {
@@ -6896,7 +6908,9 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   }
   root.appendChild(brandToggle);
   var brandAlignmentFrame = 0;
-  var brandFrame = root.closest('.view-content') || root.parentElement || root;
+  var brandFrame = root.closest('.workspace-leaf-content') ||
+    (root.closest('.view-content') && root.closest('.view-content').parentElement) ||
+    root.parentElement || root;
   function alignBrandToViewport() {
     if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
     brandToggle.style.setProperty('--mobile-brand-right', '0px');

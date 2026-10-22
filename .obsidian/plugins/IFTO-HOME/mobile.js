@@ -106,6 +106,8 @@
     b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^新建/, '');
   });
   root.appendChild(dock);
+  var returnHomeButton = button('返回首页', function() { navigate('home'); }, 'mobile-return-home');
+  dock.appendChild(returnHomeButton);
 
   var shortcutOpen = false, shortcutHideTimer = 0;
   var brandToggle = button('', function(e) {
@@ -124,7 +126,9 @@
   }
   root.appendChild(brandToggle);
   var brandAlignmentFrame = 0;
-  var brandFrame = root.closest('.view-content') || root.parentElement || root;
+  var brandFrame = root.closest('.workspace-leaf-content') ||
+    (root.closest('.view-content') && root.closest('.view-content').parentElement) ||
+    root.parentElement || root;
   function alignBrandToViewport() {
     if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
     brandToggle.style.setProperty('--mobile-brand-right', '0px');
