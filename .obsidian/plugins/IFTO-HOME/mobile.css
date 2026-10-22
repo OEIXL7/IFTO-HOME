@@ -392,6 +392,36 @@
   .ifto-container.ifto-phone { --ifto-brand-width: 36px; --ifto-brand-height: 94.5px; }
 }
 .ifto-phone .ifto-confirm-overlay { z-index: 1100; }
+.ifto-phone .header {
+  position: relative; z-index: 200; flex: 0 0 auto;
+  padding-bottom: 14px; background: var(--ifto-bg, var(--bg));
+  border-bottom: 1px solid var(--ifto-divider);
+}
+.ifto-phone .header .nav-items { top: auto; }
+.ifto-phone .mobile-pages { position: relative; z-index: 1; }
+.ifto-phone .card-detail {
+  min-width: 0; max-width: 100%; overflow: hidden !important;
+}
+.ifto-phone .card-detail .card-title {
+  display: -webkit-box !important; -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important; max-height: 3em;
+  overflow: hidden !important; overflow-wrap: anywhere; word-break: break-word;
+}
+.ifto-phone .card-detail .card-date {
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ifto-phone .card-detail .card-tags {
+  display: flex; flex: 0 1 auto; flex-wrap: wrap; align-content: flex-start; align-items: flex-start;
+  gap: 3px; width: 100%; max-width: 100%; max-height: 44px; min-width: 0;
+  overflow: hidden !important; white-space: normal; line-height: 1.4; margin-top: auto;
+}
+.ifto-phone .card-detail .card-tag {
+  display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 0; max-width: 100%;
+  box-sizing: border-box; overflow: hidden; text-overflow: ellipsis;
+  overflow-wrap: anywhere; word-break: break-word; white-space: normal;
+  line-height: 1.35; padding: 2px 7px; margin: 0;
+}
+.ifto-phone .card-grid .card-detail.mobile-card-wide { grid-column: 1 / -1; }
 @media (max-width: 350px) {
   .ifto-phone .mobile-panel { padding-right: 10px; padding-left: 10px; }
   .ifto-phone .tabs { gap: 4px 10px; }

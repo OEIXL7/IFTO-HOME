@@ -558,7 +558,7 @@
     });
     rail.querySelectorAll(cardsSelector).forEach(function(card) {
       card.setAttribute('draggable', 'false');
-      if (card.matches('#inboxGrid .card-detail')) {
+      if (card.matches('.card-grid .card-detail')) {
         var tagCount = card.querySelectorAll('.card-tags .card-tag').length;
         card.classList.toggle('mobile-card-wide', tagCount > 3);
       }
