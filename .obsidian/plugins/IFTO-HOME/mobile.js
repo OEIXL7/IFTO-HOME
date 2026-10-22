@@ -110,12 +110,20 @@
   dock.hidden = true;
   var shortcuts = root.querySelector('.shortcuts');
   dock.appendChild(shortcuts);
+  var shortcutLabels = {
+    's-collect': 'INBOX收集',
+    's-todo': 'TODO待办',
+    's-task': 'PROJECT任务',
+    's-note': 'NOTE笔记'
+  };
   shortcuts.querySelectorAll('.btn-s').forEach(function(b) {
-    b.setAttribute('aria-label', b.textContent.replace('+', '').trim());
-    b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^新建/, '');
+    var label = shortcutLabels[b.id];
+    if (!label) return;
+    b.setAttribute('aria-label', label);
+    b.querySelector('.s-label').textContent = label;
   });
   root.appendChild(dock);
-  var returnHomeButton = button('返回首页', function() { navigate('home'); }, 'mobile-return-home');
+  var returnHomeButton = button('HOME返回首页', function() { navigate('home'); }, 'mobile-return-home');
   dock.appendChild(returnHomeButton);
 
   var shortcutOpen = false, shortcutHideTimer = 0;

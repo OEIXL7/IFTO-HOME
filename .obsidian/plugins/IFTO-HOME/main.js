@@ -1225,7 +1225,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .header {
   position: relative; z-index: 200; flex: 0 0 auto;
   padding-bottom: 14px; background: var(--ifto-bg, var(--bg));
-  border-bottom: 1px solid var(--ifto-divider);
 }
 .ifto-phone .header .nav-items { top: auto; }
 .ifto-phone .mobile-pages { position: relative; z-index: 1; }
@@ -6984,12 +6983,20 @@ var __IFTO_MOBILE_JS = `/* Phone presentation only. Business operations continue
   dock.hidden = true;
   var shortcuts = root.querySelector('.shortcuts');
   dock.appendChild(shortcuts);
+  var shortcutLabels = {
+    's-collect': 'INBOX\u6536\u96C6',
+    's-todo': 'TODO\u5F85\u529E',
+    's-task': 'PROJECT\u4EFB\u52A1',
+    's-note': 'NOTE\u7B14\u8BB0'
+  };
   shortcuts.querySelectorAll('.btn-s').forEach(function(b) {
-    b.setAttribute('aria-label', b.textContent.replace('+', '').trim());
-    b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^\u65B0\u5EFA/, '');
+    var label = shortcutLabels[b.id];
+    if (!label) return;
+    b.setAttribute('aria-label', label);
+    b.querySelector('.s-label').textContent = label;
   });
   root.appendChild(dock);
-  var returnHomeButton = button('\u8FD4\u56DE\u9996\u9875', function() { navigate('home'); }, 'mobile-return-home');
+  var returnHomeButton = button('HOME\u8FD4\u56DE\u9996\u9875', function() { navigate('home'); }, 'mobile-return-home');
   dock.appendChild(returnHomeButton);
 
   var shortcutOpen = false, shortcutHideTimer = 0;

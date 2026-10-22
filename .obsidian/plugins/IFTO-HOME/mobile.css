@@ -395,7 +395,6 @@
 .ifto-phone .header {
   position: relative; z-index: 200; flex: 0 0 auto;
   padding-bottom: 14px; background: var(--ifto-bg, var(--bg));
-  border-bottom: 1px solid var(--ifto-divider);
 }
 .ifto-phone .header .nav-items { top: auto; }
 .ifto-phone .mobile-pages { position: relative; z-index: 1; }
