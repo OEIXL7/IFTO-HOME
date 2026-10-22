@@ -26,7 +26,7 @@ async (page) => {
   const phoneLogo = await page.locator('.mobile-brand-toggle').evaluate(el => { const r = el.getBoundingClientRect(); return {right:r.right,bottom:r.bottom,top:r.top,width:parseFloat(getComputedStyle(el).width),viewport:innerHeight}; });
   assert(Math.abs(phoneLogo.right - 375) < 1, 'Phone brand toggle sits flush with the viewport edge');
   assert(phoneLogo.bottom < phoneLogo.viewport - 80 && phoneLogo.top > phoneLogo.viewport / 2, 'Phone brand toggle sits at the bottom-right above Obsidian controls');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect(); return r.left >= 0 && Math.abs(r.right - innerWidth) < 1 && Math.abs(r.width - b.width) < 1 && Math.abs(r.height - b.height) < 1 && r.height >= 199; }), 'IFTO artwork itself fills the enlarged edge-aligned tap target');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect(); return r.left >= 0 && Math.abs(r.right - innerWidth) < 1 && Math.abs(r.width - b.width) < 1 && Math.abs(r.height - b.height) < 1 && Math.abs(r.width - 56) < 1 && Math.abs(r.height - 150) < 1; }), 'IFTO artwork itself is the real-size edge-aligned tap target with no oversized invisible box');
   assert(await page.locator('.nav-item').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 18), 'Phone navigation type matches habit heading size');
   assert(await page.locator('.mobile-page-watermark').count() === 1 && await page.locator('.mobile-page-watermark img').count() === 1, 'A single IFTO × IFUS watermark is fixed at the bottom of the phone view');
   assert(await page.locator('.mobile-page-watermark').evaluate(el => Math.abs(el.getBoundingClientRect().bottom - innerHeight) <= 3 && el.querySelector('img').getBoundingClientRect().width <= 101 && parseFloat(getComputedStyle(el).fontSize) <= 6), 'Watermark is reduced and fixed beneath the Obsidian toolbar area');
@@ -46,15 +46,15 @@ async (page) => {
   await go('home');
   assert(headingTops.every(top => Math.abs(top - homeHeadingTop) <= 8), 'All page headings align with the HOME heading position');
   assert(titleBaselines.every(delta => delta <= 1), 'English watermark and foreground title share one baseline');
-  assert(await page.locator('#inbox .section-title-wrap').evaluate(w => parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize) >= 79 && parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize) <= 48), 'Background English headings match HOME IFTO scale');
+  assert(await page.locator('#inbox .section-title-wrap').evaluate(w => { const back=parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize), front=parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize); return back / front >= 1.4 && back / front <= 1.6; }), 'Background English headings are about 1.5 times the foreground title size');
   assert(await page.locator('#inbox .section-title-wrap').evaluate(w => getComputedStyle(w.querySelector('.section-title')).fontWeight === getComputedStyle(document.querySelector('.hero-watermark')).fontWeight), 'Section English title weight matches HOME IFTO');
   assert(await page.locator('#heroRefreshLabel').evaluate(el => getComputedStyle(el).borderRadius === '0px'), 'Cover refresh label keeps square corners');
-  assert(await page.locator('.mobile-brand-toggle').evaluate(el => parseFloat(getComputedStyle(el).width) >= 80), 'Logo tap target matches the enlarged artwork and remains edge aligned');
+  assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const r=el.getBoundingClientRect(); return Math.abs(r.right-innerWidth)<1 && Math.abs(r.width-56)<1 && Math.abs(r.height-150)<1; }), 'Logo control matches the visible artwork and reaches the viewport edge');
   assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden && el.querySelector('#heroImage')), 'Home opens on the configured cover image');
   assert(await page.locator('.mobile-home-cover').evaluate(el => getComputedStyle(el).boxShadow === 'none'), 'Home cover image has no bottom shadow');
   assert(await page.locator('#heroImage').evaluate(el => getComputedStyle(el, '::before').content !== 'none' && getComputedStyle(el, '::before').backgroundColor === 'rgb(255, 255, 255)'), 'Home cover cuts out a page-colored lower-left label area');
   assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const s=getComputedStyle(el); return s.backgroundColor === 'rgba(0, 0, 0, 0)' && s.borderWidth === '0px' && s.boxShadow === 'none'; }), 'Logo touch target has no visible background plate');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 300 && Math.abs(el.getBoundingClientRect().right - innerWidth) < 1), 'Black IFTO artwork is enlarged and touches the right edge');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 149 && Math.abs(el.getBoundingClientRect().right - innerWidth) < 1), 'Black IFTO artwork touches the right edge at its aspect-correct display size');
   assert(await page.locator('.mobile-page-watermark').evaluate(el => getComputedStyle(el).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(el).opacity === '1'), 'Bottom watermark sits on an opaque light-theme plate');
   assert(await page.locator('#widgetCard').evaluate(el => el.hidden), 'First home slide hides widgets behind the cover');
   assert(await page.locator('#widgetDots .mobile-cover-dot.active').count() === 1, 'Cover image is the active first carousel page');
@@ -104,6 +104,8 @@ async (page) => {
     await page.waitForTimeout(200);
     await page.screenshot({ path: 'output/playwright/mobile-' + id + '.png', scale: 'css' });
   }
+  await go('project');
+  assert(await page.locator('#project .project-col-title').first().evaluate(el => parseFloat(getComputedStyle(el).paddingTop) >= 8 && el.getBoundingClientRect().height >= 34), 'Project status headings have more space above them');
   await go('inbox');
   assert(await page.locator('#inboxGrid > .card-detail').count() === 8, 'Inbox has eight real cards per phone page');
   await page.locator('#inbox .slide-btn').nth(1).click();
@@ -257,7 +259,7 @@ async (page) => {
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
   assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 139), 'Phone brand artwork remains enlarged in supported viewports');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 125), 'Phone brand artwork remains visible in short viewports');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
     await page.setViewportSize(size);

@@ -123,6 +123,17 @@
     brandToggle.appendChild(brandMark);
   }
   root.appendChild(brandToggle);
+  function alignBrandToViewport() {
+    brandToggle.style.setProperty('--mobile-brand-right', '0px');
+    requestAnimationFrame(function() {
+      var viewportRight = window.visualViewport ? window.visualViewport.offsetLeft + window.visualViewport.width : window.innerWidth;
+      var gap = viewportRight - brandToggle.getBoundingClientRect().right;
+      if (gap > 0.5) brandToggle.style.setProperty('--mobile-brand-right', (-gap) + 'px');
+    });
+  }
+  alignBrandToViewport();
+  on(window, 'resize', alignBrandToViewport);
+  if (window.visualViewport) on(window.visualViewport, 'resize', alignBrandToViewport);
   function setShortcutsOpen(open) {
     shortcutOpen = open;
     window.clearTimeout(shortcutHideTimer);

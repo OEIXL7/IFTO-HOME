@@ -835,10 +835,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   --ifto-scale: 1;
   --ifto-host-top-inset: max(52px, env(safe-area-inset-top, 0px));
   --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
-  --ifto-brand-width: 80px;
-  --ifto-brand-height: 200px;
+  --ifto-brand-width: 56px;
+  --ifto-brand-height: 150px;
   --mobile-panel-bg: var(--g6, #f2f2f2);
-  position: relative; overflow: hidden !important; overscroll-behavior-x: none;
+  position: relative; overflow: visible !important; overscroll-behavior-x: none;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -907,7 +907,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   letter-spacing: -1px !important; white-space: nowrap; transform: none !important;
 }
 .ifto-phone .section-title-wrap .section-title {
-  font-size: clamp(64px, 21.333vw, 80px) !important;
+  font-size: clamp(48px, 17vw, 72px) !important;
   font-weight: 400; opacity: .22; color: var(--g4); align-self: auto;
 }
 .ifto-phone .section-title-watermark { font-size: clamp(29px, 11.4vw, 48px) !important; font-weight: 300; color: var(--g1); }
@@ -1021,7 +1021,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   padding: 2px 9px 9px; overflow: visible; overscroll-behavior: auto;
   background: var(--mobile-panel-bg); border-radius: 0 !important;
 }
-.ifto-phone .project-col-title { justify-content: center; text-align: center; padding: 0 2px; min-height: 26px; margin-bottom: 2px; font-size: 14px; }
+.ifto-phone .project-col-title { justify-content: center; text-align: center; padding: 8px 2px 0; box-sizing: border-box; min-height: 34px; margin-bottom: 2px; font-size: 14px; }
 .ifto-phone .project-col-title-toggle > span { display: inline-flex; align-items: center; min-height: 30px; }
 .ifto-phone .project-card, .ifto-phone .project-file-item {
   position: relative; min-height: 36px; height: auto; width: 100%; padding: 8px 30px 8px 8px;
@@ -1125,9 +1125,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-sheet .mobile-sheet-cancel { text-align: center; margin-top: 10px; border: 0; background: var(--g6); }
 
 /* Final phone polish from device review. */
-.ifto-container.ifto-phone { --ifto-brand-width: 100px; --ifto-brand-height: 300px; }
+.ifto-container.ifto-phone { --ifto-brand-width: 56px; --ifto-brand-height: 150px; }
 .ifto-phone .mobile-brand-toggle {
-  position: fixed !important; right: 0 !important;
+  position: fixed !important; right: var(--mobile-brand-right, 0px) !important;
   appearance: none !important; -webkit-appearance: none !important;
   background: transparent !important; background-color: transparent !important; background-image: none !important;
   border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
@@ -1135,6 +1135,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 }
 .ifto-phone .mobile-brand-mark {
   width: var(--ifto-brand-height) !important; height: var(--ifto-brand-width) !important;
+  aspect-ratio: 115 / 43;
   object-fit: fill !important; background: transparent !important; border: 0 !important;
   box-shadow: none !important; filter: none !important;
 }
@@ -1177,7 +1178,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .activity-grid .card-sm > div { align-items: center !important; }
 .ifto-phone .activity-grid .card-sm > :not(.mobile-more) { align-self: center; }
 @media (max-height: 600px) {
-  .ifto-container.ifto-phone { --ifto-brand-width: 56px; --ifto-brand-height: 180px; }
+  .ifto-container.ifto-phone { --ifto-brand-width: 48px; --ifto-brand-height: 126px; }
 }
 .ifto-phone .ifto-confirm-overlay { z-index: 1100; }
 @media (max-width: 350px) {
@@ -6894,6 +6895,17 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     brandToggle.appendChild(brandMark);
   }
   root.appendChild(brandToggle);
+  function alignBrandToViewport() {
+    brandToggle.style.setProperty('--mobile-brand-right', '0px');
+    requestAnimationFrame(function() {
+      var viewportRight = window.visualViewport ? window.visualViewport.offsetLeft + window.visualViewport.width : window.innerWidth;
+      var gap = viewportRight - brandToggle.getBoundingClientRect().right;
+      if (gap > 0.5) brandToggle.style.setProperty('--mobile-brand-right', (-gap) + 'px');
+    });
+  }
+  alignBrandToViewport();
+  on(window, 'resize', alignBrandToViewport);
+  if (window.visualViewport) on(window.visualViewport, 'resize', alignBrandToViewport);
   function setShortcutsOpen(open) {
     shortcutOpen = open;
     window.clearTimeout(shortcutHideTimer);
