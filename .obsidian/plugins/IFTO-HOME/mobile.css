@@ -123,7 +123,7 @@
   height: 358px; max-height: 358px; overflow-x: hidden; overflow-y: auto;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
-.ifto-phone #noteGrid.note-grid { height: clamp(360px, calc(100dvh - 300px), 520px); max-height: clamp(360px, calc(100dvh - 300px), 520px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.ifto-phone #noteGrid.note-grid { height: clamp(220px, calc(100dvh - 380px), 440px); max-height: clamp(220px, calc(100dvh - 380px), 440px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .ifto-phone .card, .ifto-phone .card-detail, .ifto-phone .card-sm,
 .ifto-phone .note-card, .ifto-phone .note-card-paper, .ifto-phone .note-add-btn {
   position: relative; width: 100%; max-width: 100%; min-width: 0; margin-inline: auto;
