@@ -23,9 +23,11 @@ async (page) => {
   assert(await page.locator('#inbox [data-tab="organize"]').count() === 0, 'Phone inbox omits the drag-based organize tab');
   const topInset = await page.locator('.header .nav-items').evaluate(el => el.getBoundingClientRect().top);
   assert(topInset >= 52, 'Phone navigation clears the status area');
-  const phoneLogoRight = await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().right);
-  assert(Math.abs(phoneLogoRight - 375) < 1, 'Phone brand toggle sits flush with the viewport edge');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), 'Rotated IFTO mark remains fully visible at the viewport edge');
+  const phoneLogo = await page.locator('.mobile-brand-toggle').evaluate(el => { const r = el.getBoundingClientRect(); return {right:r.right,bottom:r.bottom,top:r.top,width:parseFloat(getComputedStyle(el).width),viewport:innerHeight}; });
+  assert(Math.abs(phoneLogo.right - 375) < 1, 'Phone brand toggle sits flush with the viewport edge');
+  assert(phoneLogo.bottom < phoneLogo.viewport - 80 && phoneLogo.top > phoneLogo.viewport / 2, 'Phone brand toggle sits at the bottom-right above Obsidian controls');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && parseFloat(getComputedStyle(el).width) >= 130; }), 'Enlarged IFTO mark remains fully visible at the viewport edge');
+  assert(await page.locator('.nav-item').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 18), 'Phone navigation type matches habit heading size');
   const homeGeometry = await page.evaluate(() => ({
     title: document.querySelector('.hero-brand').getBoundingClientRect().bottom,
     widget: document.querySelector('.widget-card').getBoundingClientRect().top,
@@ -40,7 +42,7 @@ async (page) => {
   assert(Math.abs(await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().top) - logoTop) < 1, 'IFTO logo stays fixed while page content scrolls');
   await go('home');
   await page.locator('.mobile-brand-toggle').click();
-  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight && el.getBoundingClientRect().width <= 155), 'Brand tap opens a compact on-screen shortcut panel');
+  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight - 80 && el.getBoundingClientRect().width <= 155), 'Brand tap opens a compact on-screen shortcut panel beside the logo');
   assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).transitionDuration.split(',').some(duration => parseFloat(duration) >= .2)), 'Shortcut panel expands with a transition');
   const shortcutTops = await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.map(el => el.getBoundingClientRect().top));
   assert(shortcutTops.every((top, i) => i === 0 || top > shortcutTops[i - 1]), 'Shortcut actions stack vertically');
@@ -172,6 +174,10 @@ async (page) => {
   await page.locator('#domainResetBtn').click();
   assert(await page.evaluate(() => dZoom === 1 && dPanX === 0 && dPanY === 0), 'AREA reset control resets zoom and pan');
   await go('home');
+  await swipe(280, 80, 100, 80);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'inbox' && document.querySelector('.nav-item[aria-current="page"]').getAttribute('href') === '#inbox'), 'Navigation-bar swipe switches the page and selected tab together');
+  await swipe(100, 80, 280, 80);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'Reverse navigation-bar swipe returns to the previous page');
   await swipe(280, 120, 100, 120);
   assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'inbox'), 'Left swipe goes to next page');
   await swipe(100, 120, 280, 120);
@@ -203,7 +209,7 @@ async (page) => {
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
   assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => parseFloat(getComputedStyle(el).width) >= 90), 'Phone brand mark is enlarged');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => parseFloat(getComputedStyle(el).width) >= 130), 'Phone brand mark is enlarged');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
     await page.setViewportSize(size);

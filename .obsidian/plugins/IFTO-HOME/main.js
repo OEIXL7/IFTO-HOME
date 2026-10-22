@@ -861,13 +861,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .nav-items {
   display: flex; flex-wrap: nowrap !important; justify-content: flex-start !important;
   overflow-x: auto; overflow-y: hidden; gap: 13px; padding: 5px 0;
-  width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-y;
 }
 .ifto-phone .nav-items::-webkit-scrollbar { display: none; }
 .ifto-phone .nav-item {
   flex: 0 0 auto !important; display: inline-flex; align-items: center; justify-content: center;
   min-height: 38px; padding: 0 4px !important; margin: 0 !important;
-  font-size: 12px !important; font-weight: 400;
+  font-size: 18px !important; font-weight: 400;
   letter-spacing: 1.2px !important; white-space: nowrap; line-height: 1.2;
 }
 .ifto-phone .nav-item.active::before { top: 5px; }
@@ -880,14 +880,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   -webkit-overflow-scrolling: touch;
 }
 .ifto-phone .mobile-brand-mark {
-  position: absolute; left: calc(50% - 45px); top: calc(50% - 17px); width: 90px; height: 34px; margin: 0;
+  position: absolute; left: 50%; top: 50%; width: 132px; height: 50px; margin: 0;
   object-fit: contain; transform: rotate(-90deg); pointer-events: none;
+  translate: -50% -50%;
   border: 0; box-shadow: none; background: transparent;
 }
 .theme-dark .ifto-phone .mobile-brand-mark { filter: brightness(0) invert(1); }
 .ifto-phone .mobile-brand-toggle {
-  position: absolute; z-index: 31; top: calc(var(--ifto-host-top-inset) + 66px); right: 0;
-  display: block; width: 38px; height: 92px; min-width: 38px; min-height: 92px;
+  position: absolute; z-index: 31; top: auto; right: 0; bottom: calc(var(--ifto-host-bottom-inset) + 8px);
+  display: block; width: 58px; height: 142px; min-width: 58px; min-height: 142px;
   padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
   cursor: pointer; touch-action: manipulation;
 }
@@ -1052,7 +1053,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone #area .dt-zoom-btn { min-width: 40px; min-height: 40px; }
 
 /* The brand button opens a vertical, floating shortcut panel on demand. */
-.ifto-phone .mobile-dock { position: absolute; z-index: 30; top: calc(var(--ifto-host-top-inset) + 162px); right: 10px; width: min(150px, calc(100% - 54px)); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 170px); overflow-x: hidden; overflow-y: auto; padding: 8px; background: var(--ifto-card-bg); border: 1px solid var(--ifto-divider); box-shadow: var(--ifto-shadow-strong); opacity: 0; visibility: hidden; transform: scale(.12,.12); transform-origin: top right; pointer-events: none; transition: opacity 160ms ease, transform 240ms cubic-bezier(.2,.8,.2,1), visibility 0s linear 240ms; }
+.ifto-phone .mobile-dock { position: absolute; z-index: 30; top: auto; bottom: calc(var(--ifto-host-bottom-inset) + 8px); right: 64px; width: min(150px, calc(100% - 78px)); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); overflow-x: hidden; overflow-y: auto; padding: 8px; background: var(--ifto-card-bg); border: 1px solid var(--ifto-divider); box-shadow: var(--ifto-shadow-strong); opacity: 0; visibility: hidden; transform: scale(.12,.12); transform-origin: bottom right; pointer-events: none; transition: opacity 160ms ease, transform 240ms cubic-bezier(.2,.8,.2,1), visibility 0s linear 240ms; }
 .ifto-phone .mobile-dock[hidden] { display: none !important; }
 .ifto-phone .mobile-dock.is-open { opacity: 1; visibility: visible; transform: scale(1); pointer-events: auto; transition-delay: 0s; }
 .ifto-phone .mobile-dock .hero-title { display: flex; justify-content: flex-start; gap: 5px; font-size: 11px; font-weight: 400; letter-spacing: 1px; margin: 0 0 7px; line-height: 1.3; white-space: nowrap; }
@@ -1069,7 +1070,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone.mobile-keyboard .mobile-dock { display: none; }
 .ifto-phone.mobile-keyboard .mobile-brand-toggle { display: none; }
 @media (max-height: 600px) {
-  .ifto-phone .mobile-dock { top: calc(var(--ifto-host-top-inset) + 6px); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); }
+  .ifto-phone .mobile-brand-toggle { height: 88px; min-height: 88px; width: 46px; min-width: 46px; }
+  .ifto-phone .mobile-brand-mark { width: 82px; height: 32px; }
+  .ifto-phone .mobile-dock { bottom: calc(var(--ifto-host-bottom-inset) + 8px); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); }
 }
 .ifto-phone .mobile-more { position: absolute; top: 0; right: 0; width: 32px; height: 32px; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--ifto-text-2); font-size: 20px; z-index: 2; }
 .ifto-phone .mobile-empty { grid-column: 1 / -1; align-self: center; text-align: center; padding: 24px 8px; color: var(--ifto-text-2); font-size: 12px; }
@@ -6683,7 +6686,7 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   var controller = new AbortController();
   var signal = controller.signal;
   var ids = ['home', 'inbox', 'todo', 'project', 'area', 'note', 'review'];
-  var current = 'home', frame = 0, gesture = null, suppressClickUntil = 0;
+  var current = 'home', frame = 0, gesture = null, navGesture = null, suppressClickUntil = 0;
   var notePages = { reading: 1, read: 1, paper: 1 };
   var sheet = null, sheetTrigger = null;
   var viewportBase = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -6811,6 +6814,41 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
       if (ids.indexOf(id) >= 0) { e.preventDefault(); e.stopImmediatePropagation(); navigate(id); }
     }
   }, { capture: true });
+
+  // Swiping directly across the top navigation changes the selected page as
+  // well as keeping the selected label in view. The outer edge lanes remain
+  // available to Obsidian's own sidebar gestures.
+  on(nav, 'touchstart', function(e) {
+    navGesture = null;
+    if (sheet || e.touches.length !== 1 || e.target.closest('input,button,[contenteditable="true"]')) return;
+    var t = e.touches[0], bounds = root.getBoundingClientRect();
+    var edgeReserve = Math.min(64, Math.max(48, bounds.width * 0.16));
+    if (t.clientX - bounds.left < edgeReserve || bounds.right - t.clientX < edgeReserve) return;
+    navGesture = { x: t.clientX, y: t.clientY, lastX: t.clientX, start: Date.now(), axis: '' };
+  }, { passive: true });
+  on(nav, 'touchmove', function(e) {
+    if (!navGesture) return;
+    if (e.touches.length !== 1) { navGesture = null; return; }
+    var t = e.touches[0], dx = t.clientX - navGesture.x, dy = t.clientY - navGesture.y;
+    navGesture.lastX = t.clientX;
+    if (!navGesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) navGesture.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
+    if (navGesture.axis === 'x') {
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { passive: false });
+  on(nav, 'touchend', function(e) {
+    if (!navGesture) return;
+    var g = navGesture; navGesture = null;
+    var t = e.changedTouches[0], dx = t ? t.clientX - g.x : g.lastX - g.x;
+    var dy = t ? t.clientY - g.y : 0;
+    if (g.axis === 'x' && Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - g.start < 900) {
+      suppressClickUntil = Date.now() + 350;
+      var next = ids.indexOf(current) + (dx < 0 ? 1 : -1);
+      if (next >= 0 && next < ids.length) navigate(ids[next]);
+    }
+  }, { passive: true });
+  on(nav, 'touchcancel', function() { navGesture = null; }, { passive: true });
 
   // Reserve broad edge zones for Obsidian's sidebar gestures. Inside the
   // center lane, require a deliberate horizontal swipe before changing pages.

@@ -9,7 +9,7 @@
   var controller = new AbortController();
   var signal = controller.signal;
   var ids = ['home', 'inbox', 'todo', 'project', 'area', 'note', 'review'];
-  var current = 'home', frame = 0, gesture = null, suppressClickUntil = 0;
+  var current = 'home', frame = 0, gesture = null, navGesture = null, suppressClickUntil = 0;
   var notePages = { reading: 1, read: 1, paper: 1 };
   var sheet = null, sheetTrigger = null;
   var viewportBase = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -137,6 +137,41 @@
       if (ids.indexOf(id) >= 0) { e.preventDefault(); e.stopImmediatePropagation(); navigate(id); }
     }
   }, { capture: true });
+
+  // Swiping directly across the top navigation changes the selected page as
+  // well as keeping the selected label in view. The outer edge lanes remain
+  // available to Obsidian's own sidebar gestures.
+  on(nav, 'touchstart', function(e) {
+    navGesture = null;
+    if (sheet || e.touches.length !== 1 || e.target.closest('input,button,[contenteditable="true"]')) return;
+    var t = e.touches[0], bounds = root.getBoundingClientRect();
+    var edgeReserve = Math.min(64, Math.max(48, bounds.width * 0.16));
+    if (t.clientX - bounds.left < edgeReserve || bounds.right - t.clientX < edgeReserve) return;
+    navGesture = { x: t.clientX, y: t.clientY, lastX: t.clientX, start: Date.now(), axis: '' };
+  }, { passive: true });
+  on(nav, 'touchmove', function(e) {
+    if (!navGesture) return;
+    if (e.touches.length !== 1) { navGesture = null; return; }
+    var t = e.touches[0], dx = t.clientX - navGesture.x, dy = t.clientY - navGesture.y;
+    navGesture.lastX = t.clientX;
+    if (!navGesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) navGesture.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
+    if (navGesture.axis === 'x') {
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { passive: false });
+  on(nav, 'touchend', function(e) {
+    if (!navGesture) return;
+    var g = navGesture; navGesture = null;
+    var t = e.changedTouches[0], dx = t ? t.clientX - g.x : g.lastX - g.x;
+    var dy = t ? t.clientY - g.y : 0;
+    if (g.axis === 'x' && Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - g.start < 900) {
+      suppressClickUntil = Date.now() + 350;
+      var next = ids.indexOf(current) + (dx < 0 ? 1 : -1);
+      if (next >= 0 && next < ids.length) navigate(ids[next]);
+    }
+  }, { passive: true });
+  on(nav, 'touchcancel', function() { navGesture = null; }, { passive: true });
 
   // Reserve broad edge zones for Obsidian's sidebar gestures. Inside the
   // center lane, require a deliberate horizontal swipe before changing pages.
