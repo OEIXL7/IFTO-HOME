@@ -30,7 +30,7 @@ async (page) => {
   assert(Math.abs(phoneLogo.right - 375) < 1, 'Phone brand toggle sits flush with the phone viewport edge');
   assert(await page.locator('.mobile-brand-layer').evaluate(el => { const r=el.getBoundingClientRect(); return getComputedStyle(el).position === 'fixed' && Math.abs(r.left) < 1 && Math.abs(r.right-innerWidth) < 1; }), 'Phone brand layer spans the WebView viewport outside the pane content box');
   assert(phoneLogo.bottom < phoneLogo.viewport - 80 && phoneLogo.top > phoneLogo.viewport / 2, 'Phone brand toggle sits at the bottom-right above Obsidian controls');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect(); return Math.abs(r.right-innerWidth)<1 && Math.abs(r.width-b.width)<1 && Math.abs(r.height-b.height)<1 && Math.abs(r.width-84)<1 && Math.abs(r.height-225)<1; }), 'IFTO artwork itself is 1.5x larger, flush with the phone edge, and matches its tap target');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect(); return Math.abs(r.right-innerWidth)<1 && Math.abs(r.width-b.width)<1 && Math.abs(r.height-b.height)<1 && Math.abs(r.width-42)<1 && Math.abs(r.height-112.5)<1; }), 'IFTO artwork itself is half-size, flush with the phone edge, and matches its tap target');
   assert(await page.locator('.nav-item').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 18), 'Phone navigation type matches habit heading size');
   assert(await page.locator('.mobile-page-watermark').count() === 1 && await page.locator('.mobile-page-watermark img').count() === 1, 'A single IFTO × IFUS watermark is fixed at the bottom of the phone view');
   assert(await page.locator('.mobile-page-watermark').evaluate(el => Math.abs(el.getBoundingClientRect().bottom - innerHeight) <= 3 && el.querySelector('img').getBoundingClientRect().width <= 101 && parseFloat(getComputedStyle(el).fontSize) <= 6), 'Watermark is reduced and fixed beneath the Obsidian toolbar area');
@@ -54,7 +54,7 @@ async (page) => {
   assert(await page.locator('#inbox .section-title-wrap').evaluate(w => { const back=parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize), front=parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize); return back / front >= 1.4 && back / front <= 1.6; }), 'Background English headings are about 1.5 times the foreground title size');
   assert(await page.locator('#inbox .section-title-wrap').evaluate(w => getComputedStyle(w.querySelector('.section-title')).fontWeight === getComputedStyle(document.querySelector('.hero-watermark')).fontWeight), 'Section English title weight matches HOME IFTO');
   assert(await page.locator('#heroRefreshLabel').evaluate(el => getComputedStyle(el).borderRadius === '0px'), 'Cover refresh label keeps square corners');
-  assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const r=el.getBoundingClientRect(); return Math.abs(r.right-innerWidth)<1 && Math.abs(r.width-84)<1 && Math.abs(r.height-225)<1; }), 'Logo control matches the visible artwork and reaches the phone viewport edge');
+  assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const r=el.getBoundingClientRect(); return Math.abs(r.right-innerWidth)<1 && Math.abs(r.width-42)<1 && Math.abs(r.height-112.5)<1; }), 'Logo control matches the visible artwork and reaches the phone viewport edge');
   assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden && el.querySelector('#heroImage')), 'Home opens on the configured cover image');
   assert(await page.locator('.mobile-home-cover').evaluate(el => getComputedStyle(el).boxShadow === 'none'), 'Home cover image has no bottom shadow');
   await page.locator('#heroRefreshLabel').click(); await settle();
@@ -62,7 +62,7 @@ async (page) => {
   assert(defaultCoverAfter.includes('/home-cover/') && defaultCoverAfter !== defaultCoverBefore, 'Change-mood action advances to another bundled default cover');
   assert(await page.locator('#heroImage').evaluate(el => getComputedStyle(el, '::before').content !== 'none' && getComputedStyle(el, '::before').backgroundColor === 'rgb(255, 255, 255)'), 'Home cover cuts out a page-colored lower-left label area');
   assert(await page.locator('.mobile-brand-toggle').evaluate(el => { const s=getComputedStyle(el); return s.backgroundColor === 'rgba(0, 0, 0, 0)' && s.borderWidth === '0px' && s.boxShadow === 'none'; }), 'Logo touch target has no visible background plate');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r=el.getBoundingClientRect(); return r.height >= 224 && Math.abs(r.right-innerWidth)<1; }), 'Black IFTO artwork touches the phone viewport edge at 1.5x its previous display size');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r=el.getBoundingClientRect(); return Math.abs(r.height-112.5)<1 && Math.abs(r.right-innerWidth)<1; }), 'Black IFTO artwork is half-size and touches the phone viewport edge');
   assert(await page.locator('.mobile-home-heading').evaluate(el => { const back=Number.parseFloat(getComputedStyle(el.querySelector('.hero-watermark')).fontSize), front=Number.parseFloat(getComputedStyle(el.querySelector('.hero-brand')).fontSize); return back/front>=1.49 && back/front<=1.51; }), 'HOME IFTO background title is 1.5 times the INFOTOOLS foreground title');
   assert(await page.locator('.mobile-page-watermark').evaluate(el => getComputedStyle(el).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(el).opacity === '1'), 'Bottom watermark sits on an opaque light-theme plate');
   assert(await page.locator('#widgetCard').evaluate(el => el.hidden), 'First home slide hides widgets behind the cover');
@@ -110,7 +110,8 @@ async (page) => {
     if (id === 'inbox') {
       assert(await page.locator('#collect-add-btn').count() === 1 && await page.locator('#inboxGrid').locator(':scope > *').first().getAttribute('id') === 'collect-add-btn', 'Inbox starts with the desktop-style new collection card');
       assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0), 'Collect cards display their tags');
-      assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).flexWrap === 'nowrap' && getComputedStyle(el).overflowX === 'hidden'), 'Collect card tags stay on one clipped line within the card');
+      assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).flexWrap === 'wrap' && getComputedStyle(el).overflowY === 'visible'), 'Collect card tags wrap and remain fully visible');
+      assert(await page.locator('#inboxGrid .card-detail .card-title').first().evaluate(el => { const s=getComputedStyle(el); return s.overflow === 'visible' && s.webkitLineClamp === 'none' && el.scrollHeight <= el.clientHeight + 1; }), 'Collect card titles are not clipped');
     }
     if (id === 'inbox' || id === 'review') assert(await page.locator('#' + (id === 'inbox' ? 'inboxGrid' : 'reviewGrid')).evaluate(el => el.clientHeight === 358 && el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), id + ' cards scroll inside the fixed display area');
     if (id === 'note') assert(await page.locator('#noteGrid').evaluate(el => parseFloat(getComputedStyle(el).height) > parseFloat(getComputedStyle(document.querySelector('#area .dt-scroll')).height) && getComputedStyle(el).overflowY === 'auto'), 'Reading area is taller than AREA and scrolls overflow internally');
@@ -120,6 +121,10 @@ async (page) => {
     if (id === 'area') await page.waitForSelector('#area .dt-card');
     await page.waitForTimeout(200);
     await page.screenshot({ path: 'output/playwright/mobile-' + id + '.png', scale: 'css' });
+  }
+  for (const id of ['inbox','todo','project']) {
+    await go(id); await go('home'); await settle();
+    assert(await page.locator('.mobile-panel:not([hidden])').count() === 1 && await page.locator('#home').isVisible(), 'Returning from ' + id + ' restores one clean HOME panel');
   }
   await go('project');
   assert(await page.locator('#project .project-col-title').first().evaluate(el => parseFloat(getComputedStyle(el).paddingTop) >= 8 && el.getBoundingClientRect().height >= 34), 'Project status headings have more space above them');
@@ -276,7 +281,7 @@ async (page) => {
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
   assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
-  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 188), 'Phone brand artwork remains visible in short viewports');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 90), 'Phone brand artwork remains visible in short viewports');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
     await page.setViewportSize(size);

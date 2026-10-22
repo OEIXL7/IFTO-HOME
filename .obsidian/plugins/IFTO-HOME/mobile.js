@@ -6,10 +6,15 @@
   var root = window.__IFTO_ACTIVE_CONTAINER;
   if (!root || !root.classList.contains('ifto-phone')) root = document.querySelector('.ifto-container.ifto-phone');
   if (!root) return;
-  if (window.__IFTO_mobileCleanup) window.__IFTO_mobileCleanup();
-  window.__IFTO_MOBILE_ACTIVE = true;
+  // A view can be reopened while its old global callbacks are still present.
+  // Clean the previous controller before installing this one, but make global
+  // teardown ownership-aware so a late onClose from an older leaf cannot
+  // erase the newer leaf's navigation state.
+  if (typeof window.__IFTO_mobileCleanup === 'function') window.__IFTO_mobileCleanup();
   var page = root.querySelector('.page');
   if (!page) return;
+  window.__IFTO_MOBILE_OWNER = root;
+  window.__IFTO_MOBILE_ACTIVE = true;
   var controller = new AbortController();
   var signal = controller.signal;
   var ids = ['home', 'inbox', 'todo', 'project', 'area', 'note', 'review'];
@@ -553,6 +558,10 @@
     });
     rail.querySelectorAll(cardsSelector).forEach(function(card) {
       card.setAttribute('draggable', 'false');
+      if (card.matches('#inboxGrid .card-detail')) {
+        var tagCount = card.querySelectorAll('.card-tags .card-tag').length;
+        card.classList.toggle('mobile-card-wide', tagCount > 3);
+      }
       // Nested project items get their own menus; folder menus live in the header.
       var holder = card.matches('.project-folder-card') ? card.querySelector('.project-folder-header') : card;
       if (!holder || Array.from(holder.children).some(function(el) { return el.classList.contains('mobile-more'); })) return;
@@ -631,9 +640,16 @@
       else heroImageParent.appendChild(heroImage);
     }
     dock.remove(); brandLayer.remove();
-    if (window.__IFTO_ACTIVE_CONTAINER === root) window.__IFTO_ACTIVE_CONTAINER = null;
-    window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
-    window.__IFTO_mobileCleanup = null;
+    if (root.__IFTO_mobileCleanup === cleanup) root.__IFTO_mobileCleanup = null;
+    if (window.__IFTO_MOBILE_OWNER === root) {
+      if (window.__IFTO_ACTIVE_CONTAINER === root) window.__IFTO_ACTIVE_CONTAINER = null;
+      window.__IFTO_mobileNavigate = null;
+      window.__IFTO_MOBILE_ACTIVE = false;
+      window.__IFTO_mobileCleanup = null;
+      window.__IFTO_MOBILE_OWNER = null;
+    }
   };
+  var cleanup = window.__IFTO_mobileCleanup;
+  window.__IFTO_mobileCleanup = cleanup;
   root.__IFTO_mobileCleanup = window.__IFTO_mobileCleanup;
 })();

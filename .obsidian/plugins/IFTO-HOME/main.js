@@ -835,8 +835,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   --ifto-scale: 1;
   --ifto-host-top-inset: max(52px, env(safe-area-inset-top, 0px));
   --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
-  --ifto-brand-width: 84px;
-  --ifto-brand-height: 225px;
+  --ifto-brand-width: 42px;
+  --ifto-brand-height: 112.5px;
   --mobile-english-title-size: clamp(48px, 17vw, 72px);
   --mobile-panel-bg: var(--g6, #f2f2f2);
   position: relative; overflow: visible !important; overscroll-behavior-x: none;
@@ -900,8 +900,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-brand-toggle:focus-visible { outline: 2px solid var(--g1); outline-offset: -2px; }
 .mobile-brand-layer.ifto-phone {
   --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
-  --ifto-brand-width: 84px;
-  --ifto-brand-height: 225px;
+  --ifto-brand-width: 42px;
+  --ifto-brand-height: 112.5px;
   position: fixed !important; z-index: 1000; inset: 0; overflow: visible !important;
   pointer-events: none; contain: none !important; transform: none !important;
 }
@@ -958,6 +958,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   background: var(--ifto-card-bg); border: 0; box-shadow: 1px 1px 2px #00000014;
   overflow-wrap: anywhere; text-align: left;
 }
+.ifto-phone .card-detail {
+  display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
+  gap: 6px; min-height: 96px; padding: 10px 34px 10px 10px;
+  overflow: visible;
+}
 .ifto-phone .card-add, .ifto-phone .note-add-btn {
   border: 1px dashed var(--ifto-text-2); background: transparent;
   align-items: center; justify-content: center; text-align: center; box-shadow: none;
@@ -966,9 +971,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; font-size: 12px; line-height: 1.4; font-weight: 400; padding-right: 16px; white-space: normal;
 }
+.ifto-phone .card-detail .card-title {
+  display: block; overflow: visible; -webkit-line-clamp: unset; -webkit-box-orient: initial;
+  max-height: none; height: auto; flex: 0 0 auto; padding: 0;
+  font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; word-break: break-word;
+}
 .ifto-phone .card-date { font-size: 10px; letter-spacing: 0; line-height: 1.4; }
-.ifto-phone #inboxGrid .card-detail .card-tags { display: flex; flex-wrap: nowrap; max-width: 100%; overflow: hidden; white-space: nowrap; font-size: 10px; line-height: 1.25; padding-top: 4px; }
-.ifto-phone #inboxGrid .card-detail .card-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ifto-phone #inboxGrid .card-detail .card-tags {
+  display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: flex-start; gap: 3px;
+  width: 100%; max-width: 100%; overflow: visible; white-space: normal;
+  font-size: 10px; line-height: 1.5; padding-top: 0; margin-top: auto;
+}
+.ifto-phone #inboxGrid .card-detail .card-tag {
+  display: inline-block; flex: 0 1 auto; max-width: 100%; min-height: 20px;
+  box-sizing: border-box; overflow-wrap: anywhere; white-space: normal;
+  overflow: visible; text-overflow: clip; line-height: 1.4; padding: 2px 7px; margin: 0;
+}
+.ifto-phone #inboxGrid .card-detail.mobile-card-wide { grid-column: 1 / -1; }
 .ifto-phone .slide-nav { justify-content: center; gap: 18px; margin: 16px 0 0; padding: 0; }
 .ifto-phone .slide-btn { width: 48px; height: 48px; border-radius: 0 !important; box-shadow: none; background: var(--ifto-card-bg); }
 .ifto-phone .slide-btn:disabled { opacity: .3; cursor: default; }
@@ -1128,7 +1147,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone.mobile-keyboard .mobile-dock { display: none; }
 .ifto-phone.mobile-keyboard .mobile-brand-toggle { display: none; }
 @media (max-height: 600px) {
-.ifto-phone { --ifto-brand-width: 72px; --ifto-brand-height: 189px; }
+.ifto-phone { --ifto-brand-width: 36px; --ifto-brand-height: 94.5px; }
   .ifto-phone .mobile-dock { bottom: calc(var(--ifto-host-bottom-inset) + 8px); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); }
 }
 .ifto-phone .mobile-more { position: absolute; top: 0; right: 0; width: 32px; height: 32px; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--ifto-text-2); font-size: 20px; z-index: 2; }
@@ -1144,7 +1163,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-sheet .mobile-sheet-cancel { text-align: center; margin-top: 10px; border: 0; background: var(--g6); }
 
 /* Final phone polish from device review. */
-.ifto-container.ifto-phone { --ifto-brand-width: 84px; --ifto-brand-height: 225px; }
+.ifto-container.ifto-phone { --ifto-brand-width: 42px; --ifto-brand-height: 112.5px; }
 .ifto-phone .mobile-brand-toggle {
   position: fixed !important; right: 0 !important; left: auto !important;
   appearance: none !important; -webkit-appearance: none !important;
@@ -1197,7 +1216,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .activity-grid .card-sm > div { align-items: center !important; }
 .ifto-phone .activity-grid .card-sm > :not(.mobile-more) { align-self: center; }
 @media (max-height: 600px) {
-  .ifto-container.ifto-phone { --ifto-brand-width: 72px; --ifto-brand-height: 189px; }
+  .ifto-container.ifto-phone { --ifto-brand-width: 36px; --ifto-brand-height: 94.5px; }
 }
 .ifto-phone .ifto-confirm-overlay { z-index: 1100; }
 @media (max-width: 350px) {
@@ -6820,10 +6839,15 @@ var __IFTO_MOBILE_JS = `/* Phone presentation only. Business operations continue
   var root = window.__IFTO_ACTIVE_CONTAINER;
   if (!root || !root.classList.contains('ifto-phone')) root = document.querySelector('.ifto-container.ifto-phone');
   if (!root) return;
-  if (window.__IFTO_mobileCleanup) window.__IFTO_mobileCleanup();
-  window.__IFTO_MOBILE_ACTIVE = true;
+  // A view can be reopened while its old global callbacks are still present.
+  // Clean the previous controller before installing this one, but make global
+  // teardown ownership-aware so a late onClose from an older leaf cannot
+  // erase the newer leaf's navigation state.
+  if (typeof window.__IFTO_mobileCleanup === 'function') window.__IFTO_mobileCleanup();
   var page = root.querySelector('.page');
   if (!page) return;
+  window.__IFTO_MOBILE_OWNER = root;
+  window.__IFTO_MOBILE_ACTIVE = true;
   var controller = new AbortController();
   var signal = controller.signal;
   var ids = ['home', 'inbox', 'todo', 'project', 'area', 'note', 'review'];
@@ -7367,6 +7391,10 @@ var __IFTO_MOBILE_JS = `/* Phone presentation only. Business operations continue
     });
     rail.querySelectorAll(cardsSelector).forEach(function(card) {
       card.setAttribute('draggable', 'false');
+      if (card.matches('#inboxGrid .card-detail')) {
+        var tagCount = card.querySelectorAll('.card-tags .card-tag').length;
+        card.classList.toggle('mobile-card-wide', tagCount > 3);
+      }
       // Nested project items get their own menus; folder menus live in the header.
       var holder = card.matches('.project-folder-card') ? card.querySelector('.project-folder-header') : card;
       if (!holder || Array.from(holder.children).some(function(el) { return el.classList.contains('mobile-more'); })) return;
@@ -7445,10 +7473,17 @@ var __IFTO_MOBILE_JS = `/* Phone presentation only. Business operations continue
       else heroImageParent.appendChild(heroImage);
     }
     dock.remove(); brandLayer.remove();
-    if (window.__IFTO_ACTIVE_CONTAINER === root) window.__IFTO_ACTIVE_CONTAINER = null;
-    window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
-    window.__IFTO_mobileCleanup = null;
+    if (root.__IFTO_mobileCleanup === cleanup) root.__IFTO_mobileCleanup = null;
+    if (window.__IFTO_MOBILE_OWNER === root) {
+      if (window.__IFTO_ACTIVE_CONTAINER === root) window.__IFTO_ACTIVE_CONTAINER = null;
+      window.__IFTO_mobileNavigate = null;
+      window.__IFTO_MOBILE_ACTIVE = false;
+      window.__IFTO_mobileCleanup = null;
+      window.__IFTO_MOBILE_OWNER = null;
+    }
   };
+  var cleanup = window.__IFTO_mobileCleanup;
+  window.__IFTO_mobileCleanup = cleanup;
   root.__IFTO_mobileCleanup = window.__IFTO_mobileCleanup;
 })();
 `;
@@ -7528,6 +7563,10 @@ var IFTOView = class extends import_obsidian.ItemView {
     return "blocks";
   }
   async onOpen() {
+    const existingCleanup = this.containerEl.__IFTO_mobileCleanup;
+    if (typeof existingCleanup === "function") existingCleanup();
+    const activeCleanup = window.__IFTO_mobileCleanup;
+    if (typeof activeCleanup === "function" && activeCleanup !== existingCleanup) activeCleanup();
     this.containerEl.empty();
     this.containerEl.addClass("ifto-container");
     this.containerEl.toggleClass("ifto-phone", !!import_obsidian.Platform.isPhone);
