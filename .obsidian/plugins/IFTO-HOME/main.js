@@ -833,8 +833,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-container.ifto-phone {
   --section-pad: 13px;
   --ifto-scale: 1;
-  --ifto-host-top-inset: max(32px, env(safe-area-inset-top, 0px));
-  --ifto-host-bottom-inset: max(56px, calc(env(safe-area-inset-bottom, 0px) + 44px));
+  --ifto-host-top-inset: max(52px, env(safe-area-inset-top, 0px));
+  --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
   --mobile-panel-bg: var(--g6, #f2f2f2);
   position: relative; overflow: hidden !important; overscroll-behavior-x: none;
   min-width: 0;
@@ -880,7 +880,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   -webkit-overflow-scrolling: touch;
 }
 .ifto-phone .mobile-brand-mark {
-  position: absolute; top: 40px; right: -12px;
+  position: absolute; top: 40px; right: -20px;
   width: 65px; height: 24px; object-fit: contain; transform: rotate(-90deg);
   pointer-events: none; border: 0; box-shadow: none; background: transparent;
 }
