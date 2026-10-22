@@ -61,6 +61,19 @@
     section.classList.add('mobile-panel');
     section.setAttribute('aria-label', id.toUpperCase());
     section.hidden = id !== current;
+    var watermark = document.createElement('div');
+    watermark.className = 'mobile-page-watermark';
+    watermark.setAttribute('aria-label', 'IFTO 与 IFUS');
+    var footerLogo = root.querySelector('.footer-social img');
+    if (footerLogo) {
+      var watermarkLogo = footerLogo.cloneNode(true);
+      watermarkLogo.alt = 'IFTO × IFUS';
+      watermark.appendChild(watermarkLogo);
+    }
+    var watermarkCopy = document.createElement('span');
+    watermarkCopy.textContent = '© 2026 Designed by IFTO&IFUS';
+    watermark.appendChild(watermarkCopy);
+    section.appendChild(watermark);
     rail.appendChild(section);
   });
   var header = root.querySelector('.header');
@@ -345,10 +358,10 @@
 
   var noteNav = document.createElement('div');
   noteNav.className = 'slide-nav mobile-note-nav';
-  var prev = button('←', function() { notePages[noteTab]--; paginateNotes(); }, 'slide-btn');
+  var prev = button('◀', function() { notePages[noteTab]--; paginateNotes(); }, 'slide-btn');
   prev.setAttribute('aria-label', '上一页阅读笔记');
   var number = document.createElement('span'); number.className = 'slide-num';
-  var next = button('→', function() { notePages[noteTab]++; paginateNotes(); }, 'slide-btn');
+  var next = button('▶', function() { notePages[noteTab]++; paginateNotes(); }, 'slide-btn');
   next.setAttribute('aria-label', '下一页阅读笔记');
   noteNav.append(prev, number, next);
   root.querySelector('#note .note-main').appendChild(noteNav);

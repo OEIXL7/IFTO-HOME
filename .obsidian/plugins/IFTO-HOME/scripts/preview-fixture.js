@@ -31,7 +31,7 @@
     return Array.from(files).filter(function(entry) {
       if(!entry[0].startsWith(folder + '/')) return false;
       return recursive || entry[0].slice(folder.length + 1).indexOf('/') < 0;
-    }).map(function(entry) { return { name: entry[0].slice(folder.length + 1), fm: entry[1].fm, ctime: entry[1].ctime, title: entry[1].fm.title, tags: [] }; });
+    }).map(function(entry) { return { name: entry[0].slice(folder.length + 1), fm: entry[1].fm, ctime: entry[1].ctime, title: entry[1].fm.title, tags: (folder === 'Inbox' || folder === 'Learn') ? ['手机端', '收集'] : [] }; });
   }
   window.__IFTO_listFiles = async function(folder) { return list(folder, false).map(function(f) { return f.name; }); };
   window.__IFTO_getFilesDetail = async function(folder) { var rows = list(folder, false); return { total: rows.length, files: rows }; };

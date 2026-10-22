@@ -46,7 +46,7 @@ node scripts/preview-server.mjs
 playwright-cli run-code --filename scripts/verify-mobile.js --raw
 ```
 
-手机布局与快捷面板通过 **137 项浏览器检查**，无未捕获浏览器错误；结果保存在 `output/playwright/verification.json`，七页预览图及快捷面板预览为同目录的 `mobile-*.png`。
+手机布局与快捷面板通过 **147 项浏览器检查**，无未捕获浏览器错误；结果保存在 `output/playwright/verification.json`，七页预览图及快捷面板预览为同目录的 `mobile-*.png`。
 
 构建校验还检查了运行文件中的内嵌资源一致性、插件模块加载、关闭时清理入口，以及手机不继承桌面缩放值。
 
