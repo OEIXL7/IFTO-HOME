@@ -833,6 +833,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-container.ifto-phone {
   --section-pad: 13px;
   --ifto-scale: 1;
+  --ifto-host-top-inset: max(32px, env(safe-area-inset-top, 0px));
+  --ifto-host-bottom-inset: max(56px, calc(env(safe-area-inset-bottom, 0px) + 44px));
   --mobile-panel-bg: var(--g6, #f2f2f2);
   position: relative; overflow: hidden !important; overscroll-behavior-x: none;
   min-width: 0;
@@ -848,7 +850,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .header {
   position: relative; top: auto; z-index: 5;
   flex: 0 0 auto; height: auto; border: 0;
-  padding: 9px 0 6px;
+  padding: var(--ifto-host-top-inset) 0 6px;
 }
 .ifto-phone .header .nav {
   position: relative; top: auto; display: block;
@@ -1036,7 +1038,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone #area .dt-zoom-btn { min-width: 40px; min-height: 40px; }
 
 /* Shared bottom controls stay in layout, reserving their full height. */
-.ifto-phone .mobile-dock { flex: 0 0 auto; position: relative; z-index: 6; padding: 7px 13px max(4px, env(safe-area-inset-bottom)); background: var(--ifto-bg, var(--bg)); }
+.ifto-phone .mobile-dock { flex: 0 0 auto; position: relative; z-index: 6; padding: 7px 13px var(--ifto-host-bottom-inset); background: var(--ifto-bg, var(--bg)); }
 .ifto-phone .mobile-dock .hero-title { display: flex; justify-content: center; gap: 6px; font-size: 13px; font-weight: 400; letter-spacing: 2px; margin: 0 0 8px; line-height: 1.3; }
 .ifto-phone .mobile-dock .hero-title-sub { display: inline; font-size: 10px; letter-spacing: 0; }
 .ifto-phone .mobile-dock .shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; margin: 0 !important; }

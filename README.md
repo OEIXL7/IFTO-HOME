@@ -24,12 +24,13 @@
 2. 放入 `<你的vault>/.obsidian/plugins/IFTO-HOME/`
 3. 重启 Obsidian，在 **设置 → 第三方插件** 中启用 IFTO-HOME
 
-## 手机端（1.1.7）
+## 手机端（1.1.8）
 
 - 七个独立页面，可左右滑动或点击顶部导航切换；底部常驻收集、待办、任务、笔记快捷入口。
 - INBOX、NOTE、REVIEW 双列卡片和分页；TODO 上下两区；PROJECT 纵向状态组和触屏更多菜单；AREA 独立页面。
 - 手机布局由平台身份启用，Windows / macOS 的宽屏与窄窗口保留现有表现。
-- BRAT 已安装用户检查更新至 **1.1.7** 即可；若固定在旧版本，请在 BRAT 中切换到最新版本。更新后重新打开插件首页。
+- 顶部导航为系统状态栏留出空间，底部快捷入口避开 Obsidian 工具栏。
+- BRAT 已安装用户检查更新至 **1.1.8** 即可；若固定在旧版本，请在 BRAT 中切换到最新版本。更新后重新打开插件首页。
 - [执行计划](.obsidian/plugins/IFTO-HOME/MOBILE-PLAN.md) · [操作与构建说明](.obsidian/plugins/IFTO-HOME/MOBILE-README.md)
 
 ## 使用配套文件夹结构
