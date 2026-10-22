@@ -866,7 +866,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   overflow-x: auto; overflow-y: hidden; gap: 13px; padding: 5px 0;
   width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-y;
 }
-.ifto-phone .header .nav-items { position: relative; top: 6px; }
+.ifto-phone .header .nav-items { position: relative; top: 22px; }
 .ifto-phone .nav-items::-webkit-scrollbar { display: none; }
 .ifto-phone .nav-item {
   flex: 0 0 auto !important; display: inline-flex; align-items: center; justify-content: center;
@@ -1137,7 +1137,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 /* Final phone polish from device review. */
 .ifto-container.ifto-phone { --ifto-brand-width: 84px; --ifto-brand-height: 225px; }
 .ifto-phone .mobile-brand-toggle {
-  position: fixed !important; right: var(--mobile-brand-right, 0px) !important;
+  position: fixed !important; right: 0 !important; left: auto !important;
   appearance: none !important; -webkit-appearance: none !important;
   background: transparent !important; background-color: transparent !important; background-image: none !important;
   border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
@@ -6931,25 +6931,8 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     brandToggle.appendChild(brandMark);
   }
   root.appendChild(brandToggle);
-  var brandAlignmentFrame = 0;
-  var brandFrame = root.closest('.workspace-leaf-content') ||
-    (root.closest('.view-content') && root.closest('.view-content').parentElement) ||
-    root.parentElement || root;
-  function alignBrandToViewport() {
-    if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
-    brandToggle.style.setProperty('--mobile-brand-right', '0px');
-    brandAlignmentFrame = requestAnimationFrame(function() {
-      brandAlignmentFrame = 0;
-      var frameRight = brandFrame.getBoundingClientRect().right;
-      var correction = brandToggle.getBoundingClientRect().right - frameRight;
-      if (Math.abs(correction) > 0.5) brandToggle.style.setProperty('--mobile-brand-right', correction + 'px');
-    });
-  }
-  var brandResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(alignBrandToViewport) : null;
-  if (brandResizeObserver) { brandResizeObserver.observe(root); if (brandFrame !== root) brandResizeObserver.observe(brandFrame); }
-  alignBrandToViewport();
-  on(window, 'resize', alignBrandToViewport);
-  if (window.visualViewport) on(window.visualViewport, 'resize', alignBrandToViewport);
+  // The visible artwork should meet the phone viewport edge; anchoring to an
+  // Obsidian pane's content box leaves a noticeable gap on mobile layouts.
   function setShortcutsOpen(open) {
     shortcutOpen = open;
     window.clearTimeout(shortcutHideTimer);

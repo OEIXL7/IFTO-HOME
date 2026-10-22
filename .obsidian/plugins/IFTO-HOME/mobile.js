@@ -125,25 +125,8 @@
     brandToggle.appendChild(brandMark);
   }
   root.appendChild(brandToggle);
-  var brandAlignmentFrame = 0;
-  var brandFrame = root.closest('.workspace-leaf-content') ||
-    (root.closest('.view-content') && root.closest('.view-content').parentElement) ||
-    root.parentElement || root;
-  function alignBrandToViewport() {
-    if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
-    brandToggle.style.setProperty('--mobile-brand-right', '0px');
-    brandAlignmentFrame = requestAnimationFrame(function() {
-      brandAlignmentFrame = 0;
-      var frameRight = brandFrame.getBoundingClientRect().right;
-      var correction = brandToggle.getBoundingClientRect().right - frameRight;
-      if (Math.abs(correction) > 0.5) brandToggle.style.setProperty('--mobile-brand-right', correction + 'px');
-    });
-  }
-  var brandResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(alignBrandToViewport) : null;
-  if (brandResizeObserver) { brandResizeObserver.observe(root); if (brandFrame !== root) brandResizeObserver.observe(brandFrame); }
-  alignBrandToViewport();
-  on(window, 'resize', alignBrandToViewport);
-  if (window.visualViewport) on(window.visualViewport, 'resize', alignBrandToViewport);
+  // The visible artwork should meet the phone viewport edge; anchoring to an
+  // Obsidian pane's content box leaves a noticeable gap on mobile layouts.
   function setShortcutsOpen(open) {
     shortcutOpen = open;
     window.clearTimeout(shortcutHideTimer);
