@@ -184,21 +184,14 @@
       coverSlide.hidden = false;
       widgetCard.hidden = true;
       if (widgetDots) widgetDots.hidden = false;
-      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
-      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
-      if (coverDot) coverDot.classList.add('active');
-      if (widgetDots) widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)').forEach(function(dot) { dot.classList.remove('active'); });
+      if (window.updateWidgetDots) window.updateWidgetDots();
     }
     function showHomeWidget() {
       homeCoverActive = false;
       coverSlide.hidden = true;
       widgetCard.hidden = false;
       if (widgetDots) widgetDots.hidden = false;
-      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
-      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
-      if (coverDot) coverDot.classList.remove('active');
-      var activeDot = widgetDots && widgetDots.querySelectorAll('.widget-dot')[((window.curWidget || 0) + 1)];
-      if (activeDot) activeDot.classList.add('active');
+      if (window.updateWidgetDots) window.updateWidgetDots();
     }
     window.goToWidget = function(index) { showHomeWidget(); if (originalGoToWidget) originalGoToWidget(index); };
     window.updateWidgetDots = function() {
@@ -213,7 +206,7 @@
         widgetDots.prepend(dot);
       }
       dot.classList.toggle('active', homeCoverActive);
-      var activeDot = widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)')[(window.curWidget || 0) + 1];
+      var activeDot = widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)')[window.curWidget || 0];
       if (activeDot) activeDot.classList.toggle('active', !homeCoverActive);
     };
     if (widgetDots) {

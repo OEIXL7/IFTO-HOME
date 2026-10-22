@@ -907,7 +907,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   letter-spacing: -1px !important; white-space: nowrap; transform: none !important;
 }
 .ifto-phone .section-title-wrap .section-title {
-  font-size: clamp(48px, 17vw, 64px) !important;
+  font-size: clamp(64px, 21.333vw, 80px) !important;
   font-weight: 400; opacity: .22; color: var(--g4); align-self: auto;
 }
 .ifto-phone .section-title-watermark { font-size: clamp(29px, 11.4vw, 48px) !important; font-weight: 300; color: var(--g1); }
@@ -1127,6 +1127,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 /* Final phone polish from device review. */
 .ifto-container.ifto-phone { --ifto-brand-width: 100px; --ifto-brand-height: 300px; }
 .ifto-phone .mobile-brand-toggle {
+  position: fixed !important; right: 0 !important;
   appearance: none !important; -webkit-appearance: none !important;
   background: transparent !important; background-color: transparent !important; background-image: none !important;
   border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
@@ -6954,21 +6955,14 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
       coverSlide.hidden = false;
       widgetCard.hidden = true;
       if (widgetDots) widgetDots.hidden = false;
-      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
-      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
-      if (coverDot) coverDot.classList.add('active');
-      if (widgetDots) widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)').forEach(function(dot) { dot.classList.remove('active'); });
+      if (window.updateWidgetDots) window.updateWidgetDots();
     }
     function showHomeWidget() {
       homeCoverActive = false;
       coverSlide.hidden = true;
       widgetCard.hidden = false;
       if (widgetDots) widgetDots.hidden = false;
-      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
-      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
-      if (coverDot) coverDot.classList.remove('active');
-      var activeDot = widgetDots && widgetDots.querySelectorAll('.widget-dot')[((window.curWidget || 0) + 1)];
-      if (activeDot) activeDot.classList.add('active');
+      if (window.updateWidgetDots) window.updateWidgetDots();
     }
     window.goToWidget = function(index) { showHomeWidget(); if (originalGoToWidget) originalGoToWidget(index); };
     window.updateWidgetDots = function() {
@@ -6983,7 +6977,7 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
         widgetDots.prepend(dot);
       }
       dot.classList.toggle('active', homeCoverActive);
-      var activeDot = widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)')[(window.curWidget || 0) + 1];
+      var activeDot = widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)')[window.curWidget || 0];
       if (activeDot) activeDot.classList.toggle('active', !homeCoverActive);
     };
     if (widgetDots) {

@@ -46,7 +46,7 @@ async (page) => {
   await go('home');
   assert(headingTops.every(top => Math.abs(top - homeHeadingTop) <= 8), 'All page headings align with the HOME heading position');
   assert(titleBaselines.every(delta => delta <= 1), 'English watermark and foreground title share one baseline');
-  assert(await page.locator('#inbox .section-title-wrap').evaluate(w => parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize) >= 60 && parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize) <= 48), 'Background English headings retain their original larger size');
+  assert(await page.locator('#inbox .section-title-wrap').evaluate(w => parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize) >= 79 && parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize) <= 48), 'Background English headings match HOME IFTO scale');
   assert(await page.locator('#inbox .section-title-wrap').evaluate(w => getComputedStyle(w.querySelector('.section-title')).fontWeight === getComputedStyle(document.querySelector('.hero-watermark')).fontWeight), 'Section English title weight matches HOME IFTO');
   assert(await page.locator('#heroRefreshLabel').evaluate(el => getComputedStyle(el).borderRadius === '0px'), 'Cover refresh label keeps square corners');
   assert(await page.locator('.mobile-brand-toggle').evaluate(el => parseFloat(getComputedStyle(el).width) >= 80), 'Logo tap target matches the enlarged artwork and remains edge aligned');
@@ -58,6 +58,7 @@ async (page) => {
   assert(await page.locator('.mobile-page-watermark').evaluate(el => getComputedStyle(el).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(el).opacity === '1'), 'Bottom watermark sits on an opaque light-theme plate');
   assert(await page.locator('#widgetCard').evaluate(el => el.hidden), 'First home slide hides widgets behind the cover');
   assert(await page.locator('#widgetDots .mobile-cover-dot.active').count() === 1, 'Cover image is the active first carousel page');
+  assert(await page.locator('#widgetDots .widget-dot.active').count() === 1, 'Carousel shows exactly one active dot on the cover');
   const homeGeometry = await page.evaluate(() => ({
     title: document.querySelector('.hero-brand').getBoundingClientRect().bottom,
     widget: document.querySelector('.mobile-home-cover').getBoundingClientRect().top,
@@ -82,6 +83,7 @@ async (page) => {
   const widgetBefore = await page.evaluate(() => curWidget);
   await page.locator('#widgetNext').click();
   assert(await page.evaluate(before => curWidget === before && document.querySelector('.mobile-home-cover').hidden && !document.querySelector('#widgetCard').hidden, widgetBefore), 'Next arrow advances from the cover to the first widget');
+  assert(await page.locator('#widgetDots .widget-dot.active').count() === 1, 'Carousel shows exactly one active dot on the first widget');
   await page.locator('#widgetNext').click();
   assert(await page.evaluate(before => curWidget !== before && document.querySelector('.ifto-phone').dataset.mobilePage === 'home', widgetBefore), 'Widget arrows continue through widgets without changing pages');
   await page.locator('#widgetPrev').click(); await page.locator('#widgetPrev').click();
