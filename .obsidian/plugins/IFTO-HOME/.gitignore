@@ -1,0 +1,8 @@
+# Local settings and development artifacts must not be published.
+/data.json
+/node_modules/
+/backups/
+/output/
+/.playwright-cli/
+/.release/
+/main.js.tmp

@@ -1,0 +1,30 @@
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const root = fileURLToPath(new URL('../', import.meta.url));
+const read = async name => (await readFile(path.join(root, name), 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+const [source, runtime, html, js, css, mobile] = await Promise.all(['main.ts','main.js','home.html','home.js','mobile.css','mobile.js'].map(read));
+const expectedHtml = html.replace('</head>', '<style id="ifto-mobile-styles">\n' + css + '\n</style>\n</head>');
+const expectedJs = js + '\n;\n' + mobile;
+const inline = source.match(/\/\* __IFTO_INLINE_START__ \*\/([\s\S]*?)\/\* __IFTO_INLINE_END__ \*\//);
+assert(inline, 'TypeScript inline markers exist');
+const embedded = vm.runInNewContext(inline[1] + '\n({html:__IFTO_HOME_HTML,js:__IFTO_HOME_JS})');
+assert.equal(embedded.html, expectedHtml, 'TypeScript HTML includes current mobile CSS');
+assert.equal(embedded.js, expectedJs, 'TypeScript JS includes current phone controller');
+const host = { Plugin: class {}, ItemView: class {}, PluginSettingTab: class {}, Platform: {isPhone: false} };
+const sandbox = { module: {exports:{}}, require: id => { assert.equal(id, 'obsidian'); return host; } };
+vm.runInNewContext(runtime + '\nglobalThis.__embeddedCheck={html:__IFTO_HOME_HTML,js:__IFTO_HOME_JS};', sandbox);
+assert.equal(sandbox.__embeddedCheck.html, expectedHtml, 'Runtime HTML synchronized');
+assert.equal(sandbox.__embeddedCheck.js, expectedJs, 'Runtime JS synchronized');
+assert.equal(typeof sandbox.module.exports.default, 'function', 'Obsidian plugin exports load');
+assert.equal(typeof sandbox.module.exports.IFTOView.prototype.onClose, 'function', 'Phone cleanup available');
+const plugin = Object.create(sandbox.module.exports.default.prototype);
+plugin.settings = { zoom: .85, bgColor: '' };
+for (const phone of [true, false]) {
+  const container = { classList: { contains: () => phone }, style: { removeProperty() {} } };
+  plugin.applyAppearance(container);
+  assert.equal(container.style.zoom, phone ? '1' : '0.85', 'Phone scale independent of saved desktop zoom');
+}
+console.log('Build checks passed: embedded source/runtime resources, plugin exports, cleanup, and platform-specific zoom.');

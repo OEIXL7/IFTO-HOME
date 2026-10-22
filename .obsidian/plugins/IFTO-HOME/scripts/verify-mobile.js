@@ -1,0 +1,201 @@
+// Execute with playwright-cli run-code --filename scripts/verify-mobile.js
+async (page) => {
+  const passed = [], errors = [];
+  const assert = (condition, message) => { if (!condition) throw new Error(message); passed.push(message); };
+  try {
+  page.on('pageerror', error => errors.push(String(error)));
+  await page.route('**/*', route => route.request().url().startsWith('http://127.0.0.1:8765') ? route.continue() : route.abort());
+  const go = async id => {
+    await page.locator('.nav-item[href="#' + id + '"]').click();
+    await page.waitForFunction(id => document.querySelector('.ifto-phone').dataset.mobilePage === id, id);
+  };
+  const settle = async () => { await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))); };
+  await page.setViewportSize({ width: 375, height: 813 });
+  await page.goto('http://127.0.0.1:8765/?phone=1');
+  await page.waitForSelector('.mobile-dock');
+  await settle();
+  assert(await page.locator('.mobile-panel').count() === 7, 'Seven phone pages');
+  assert(await page.locator('.mobile-dock .btn-s').count() === 4, 'Four shared creation buttons');
+  assert(await page.locator('#s-collect').count() === 1, 'No duplicated shortcut IDs');
+  const homeGeometry = await page.evaluate(() => ({
+    title: document.querySelector('.hero-brand').getBoundingClientRect().bottom,
+    widget: document.querySelector('.widget-card').getBoundingClientRect().top,
+    dock: document.querySelector('.mobile-dock').getBoundingClientRect().bottom,
+    viewport: innerHeight
+  }));
+  assert(homeGeometry.title < homeGeometry.widget, 'Home title above widget');
+  assert(homeGeometry.dock <= homeGeometry.viewport, 'Dock fits available viewport');
+  const widgetBefore = await page.evaluate(() => curWidget);
+  await page.locator('#widgetNext').click();
+  assert(await page.evaluate(before => curWidget !== before && document.querySelector('.ifto-phone').dataset.mobilePage === 'home', widgetBefore), 'Widget arrows do not navigate pages');
+  await page.screenshot({ path: 'output/playwright/mobile-home.png', scale: 'css' });
+
+  for (const id of ['inbox','todo','project','area','note','review']) {
+    await go(id); await settle();
+    assert(await page.locator('.mobile-panel:not([hidden])').count() === 1, 'Only ' + id + ' is visible');
+    assert(await page.evaluate(id => { const el = document.getElementById(id); return el.scrollWidth <= el.clientWidth + 1; }, id), id + ' has no horizontal overflow');
+    if (id === 'area') await page.waitForSelector('#area .dt-card');
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: 'output/playwright/mobile-' + id + '.png', scale: 'css' });
+  }
+  await go('inbox');
+  assert(await page.locator('#inboxGrid > .card-detail').count() === 8, 'Inbox has eight real cards per phone page');
+  await page.locator('#inbox .slide-btn').nth(1).click();
+  await page.waitForFunction(() => inboxPage === 2 && document.querySelector('#inbox .slide-num').textContent.startsWith('02'));
+  await go('todo'); await go('inbox');
+  assert(await page.evaluate(() => inboxPage === 2), 'Inbox pagination survives page switching');
+  await page.locator('#inbox [data-tab="learn"]').click();
+  await settle();
+  assert(await page.locator('#inboxGrid > .card-detail').count() === 8, 'Quick learning uses two-column phone pagination');
+  await page.locator('#inbox [data-tab="organize"]').click(); await settle();
+  assert(await page.evaluate(() => document.querySelector('#inbox').scrollWidth <= document.querySelector('#inbox').clientWidth + 1), 'Organize sidebar fits phone width');
+  await page.locator('.side-folder-item[data-folder="Resources/参考资料"]').click();
+  await page.locator('.side-folder-item[data-folder="Resources/参考资料/参考笔记.md"] .mobile-more').click();
+  await page.getByRole('button', {name:'移至收集',exact:true}).click(); await settle();
+  assert(await page.evaluate(() => __fixture.files.has('Inbox/参考笔记.md') && !__fixture.files.has('Resources/参考资料/参考笔记.md')), 'Organize resource files can move back to inbox using touch menu');
+  await page.locator('#inbox [data-tab="collect"]').click();
+
+  await go('note'); await settle();
+  assert(await page.locator('#noteGrid > :is(.note-card,.note-add-btn):not([hidden])').count() === 8, 'Reading add card occupies one of eight slots');
+  await page.locator('.mobile-note-nav .slide-btn').nth(1).click();
+  assert(await page.locator('#noteGrid > :is(.note-card,.note-add-btn):not([hidden])').count() === 7, 'Reading second page has remaining seven cards');
+  await page.locator('#noteTab1').click(); await settle();
+  await page.locator('#noteTab0').click(); await settle();
+  assert((await page.locator('.mobile-note-nav .slide-num').textContent()).startsWith('02'), 'Reading pagination survives category switching');
+  await page.locator('#noteTab2').click(); await settle();
+  await page.locator('#paperSearchInput').fill('研究文献 19'); await settle();
+  assert(await page.locator('#noteGrid > .note-card:not([hidden])').count() === 1, 'Paper search and pagination compose');
+
+  await go('review'); await settle();
+  assert(await page.locator('#reviewGrid > .card').count() === 8, 'Review has add card plus seven files');
+  await page.locator('#review .slide-btn').nth(1).click(); await settle();
+  assert(await page.evaluate(() => reviewPage === 2), 'Review arrows paginate instead of switching pages');
+
+  await go('todo');
+  assert(await page.evaluate(() => document.getElementById('todoList').getBoundingClientRect().left === document.getElementById('activityGrid').getBoundingClientRect().left), 'Todo and activity sections share the same phone alignment');
+  const cb = page.locator('#todoList .cb').first();
+  const openedBefore = await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'open').length);
+  await cb.click(); await settle();
+  assert(await cb.getAttribute('aria-checked') === 'true', 'Checkbox accessible state updates');
+  assert(await page.evaluate(n => __fixture.calls.filter(c => c[0] === 'open').length === n, openedBefore), 'Checking task does not open file');
+  await page.evaluate(() => renderTodo()); await settle();
+  assert(await page.locator('#todoList .cb').first().getAttribute('aria-checked') === 'true', 'Checkbox state persists after refresh');
+  await page.locator('#todoList .todo-text').first().click();
+  assert(await page.evaluate(n => __fixture.calls.filter(c => c[0] === 'open').length === n + 1, openedBefore), 'Task title opens with a single tap');
+  await page.locator('#todoList .mobile-more').first().click();
+  assert(await page.locator('.mobile-sheet[role="dialog"]').count() === 1, 'Touch action sheet opens');
+  await page.getByRole('button', { name: '重命名', exact: true }).click();
+  await page.getByRole('textbox', { name: '名称', exact: true }).fill('手机重命名验证');
+  await page.getByRole('button', { name: '保存', exact: true }).click(); await settle();
+  assert(await page.evaluate(() => __fixture.files.has('Todos/手机重命名验证.md')), 'Touch rename writes through existing bridge');
+
+  await go('project'); await settle();
+  assert(await page.locator('#projectCols').evaluate(el => getComputedStyle(el).flexDirection) === 'column', 'Project status sections stack vertically');
+  const task = page.locator('.project-card[data-path="Projects/独立任务 0.md"]');
+  await task.locator('.mobile-more').click();
+  await page.getByRole('button', { name: '移至「推进中」', exact: true }).click(); await settle();
+  assert(await page.evaluate(() => __fixture.files.get('Projects/独立任务 0.md').fm.status === '推进中'), 'Touch status change uses existing project operation');
+  await page.locator('.project-folder-card[data-folder="Projects/示例项目"] .project-folder-header .mobile-more').first().click();
+  await page.getByRole('button', { name: '移至「推进中」', exact: true }).click(); await settle();
+  assert(await page.evaluate(() => __fixture.files.get('Projects/示例项目/任务 0.md').fm.status === '推进中' && __fixture.files.get('Projects/示例项目/任务 2.md').fm.status === '已完成'), 'Folder status change preserves files in other source columns');
+  await page.locator('.project-card[data-path="Projects/独立任务 0.md"] .mobile-more').click();
+  await page.getByRole('button', { name: '复制到草稿箱', exact: true }).click(); await settle();
+  assert(await page.evaluate(() => __fixture.files.has('Projects/独立任务 0.md') && Array.from(__fixture.files.keys()).some(p => p.startsWith('Drafts/') && p.endsWith('独立任务 0.md'))), 'Draft operation copies and preserves original');
+  await page.locator('.project-view-toggle').filter({ hasText: '推进中' }).click(); await settle();
+  await page.locator('.project-folder-card[data-folder="Projects/示例项目"] .project-folder-header .mobile-more').first().click();
+  await page.getByRole('button', { name: '归档已完成内容', exact: true }).click();
+  await page.waitForFunction(() => __fixture.files.has('Archive/示例项目/任务 2.md'));
+  assert(await page.evaluate(() => __fixture.files.has('Projects/示例项目/任务 0.md') && __fixture.files.has('Projects/示例项目/任务 1.md')), 'Archive retains unfinished project files');
+
+  await go('area'); await page.waitForSelector('.dt-card');
+  assert(await page.locator('#domainTreeInner').evaluate(el => getComputedStyle(el).position === 'relative'), 'AREA dashboard participates in page scroll layout');
+  await page.locator('.dt-view-btn[data-view="sun"]').click();
+  assert(await page.locator('.dt-sun-svg').count() === 1, 'AREA sun view renders in independent page');
+  await page.locator('.dt-view-btn[data-view="tree"]').click();
+  assert(await page.locator('.dt-tree-row').count() > 0, 'AREA tree view remains available');
+  await page.locator('.dt-view-btn[data-view="cards"]').click();
+
+  // Real browser touch events via CDP exercise the installed touch listeners.
+  const cdp = await page.context().newCDPSession(page);
+  const swipe = async (x1, y1, x2, y2) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x1, y: y1 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x2, y: y2 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await settle();
+  };
+  await page.evaluate(() => { document.getElementById('area').scrollTop = 0; });
+  await swipe(180, 480, 180, 250);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'area'), 'Vertical AREA card gesture does not switch pages');
+  await page.locator('.dt-view-btn[data-view="sun"]').click();
+  await cdp.send('Input.dispatchTouchEvent', {type:'touchStart',touchPoints:[{x:140,y:350},{x:240,y:350}]});
+  await cdp.send('Input.dispatchTouchEvent', {type:'touchMove',touchPoints:[{x:110,y:350},{x:270,y:350}]});
+  await cdp.send('Input.dispatchTouchEvent', {type:'touchEnd',touchPoints:[]});
+  assert(await page.evaluate(() => dZoom > 1 && document.querySelector('.ifto-phone').dataset.mobilePage === 'area'), 'AREA pinch zoom remains isolated from page navigation');
+  await page.waitForTimeout(360);
+  await page.locator('#domainResetBtn').click();
+  assert(await page.evaluate(() => dZoom === 1 && dPanX === 0 && dPanY === 0), 'AREA reset control resets zoom and pan');
+  await go('home');
+  await swipe(280, 120, 100, 120);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'inbox'), 'Left swipe goes to next page');
+  await swipe(100, 120, 280, 120);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'Right swipe goes to previous page');
+  await swipe(100, 120, 280, 120);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'First page does not wrap');
+  await swipe(180, 240, 184, 100);
+  assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'Vertical gesture does not navigate');
+  var edgeProbe = String(Date.now());
+  await page.evaluate(probe => { document.querySelector('.ifto-phone').dataset.edgeProbe = probe; }, edgeProbe);
+  try { await swipe(5, 180, 220, 180); } catch (_) { /* native browser back */ }
+  // Edge gestures are deliberately owned by the host: Chromium may go back to
+  // about:blank here. It must never cause the plugin to advance its own page.
+  var edgeChangedPluginPage = false;
+  try { edgeChangedPluginPage = await page.evaluate(probe => { var root = document.querySelector('.ifto-phone'); return root && root.dataset.edgeProbe === probe && root.dataset.mobilePage !== 'home'; }, edgeProbe); } catch (_) { /* host navigation replaced the document */ }
+  assert(!edgeChangedPluginPage, 'Host edge gesture does not change plugin page');
+
+  // New page discards any gesture click suppression before creation checks.
+  await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock');
+  for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
+  assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
+
+  for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
+    await page.setViewportSize(size);
+    for (const id of ['home','inbox','todo','project','area','note','review']) {
+      await go(id); await settle();
+      assert(await page.evaluate(id => { const el = document.getElementById(id), dock = document.querySelector('.mobile-dock'); return el.scrollWidth <= el.clientWidth + 1 && dock.getBoundingClientRect().bottom <= innerHeight + 1; }, id), id + ' fits ' + size.width + '×' + size.height);
+    }
+  }
+  await page.setViewportSize({width:375,height:813});
+  await page.goto('http://127.0.0.1:8765/?phone=1&theme=dark');
+  await go('area'); await page.waitForSelector('.dt-card');
+  await page.waitForTimeout(200);
+  await page.screenshot({path:'output/playwright/mobile-area-dark.png',scale:'css'});
+  assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).backgroundColor) !== 'rgb(255, 255, 255)', 'Dark theme reaches shared dock');
+
+  await page.goto('http://127.0.0.1:8765/?phone=1');
+  await page.waitForSelector('.mobile-dock');
+  await page.evaluate(() => { __fixture.files.clear(); return Promise.all([renderInbox(),renderTodo(),renderNote(),renderReview()]); }); await settle();
+  assert(await page.locator('#inboxGrid .mobile-empty').count() === 1 && await page.locator('#todoList .mobile-empty').count() === 1, 'Empty inbox and todo states remain usable');
+  await page.evaluate(() => document.querySelector('.ifto-phone').__IFTO_mobileCleanup());
+  assert(await page.evaluate(() => !window.__IFTO_MOBILE_ACTIVE && !window.__IFTO_mobileNavigate && !window.__IFTO_mobileCleanup), 'Phone controller cleans up on view close');
+
+  // Compare baseline and changed desktop element geometry at wide and narrow sizes.
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({width,height:900});
+    const geometry = async baseline => {
+      await page.goto('http://127.0.0.1:8765/' + (baseline ? '?baseline=1' : ''));
+      await page.waitForSelector('#inboxGrid .card-detail'); await settle();
+      return page.evaluate(() => ['.header','.hero','.shortcuts','.widget-card','#inbox','#todo','#project','#note','#review'].map(selector => {
+        const el = document.querySelector(selector), r = el.getBoundingClientRect(), s = getComputedStyle(el);
+        return {selector,x:r.x,y:r.y,w:r.width,h:r.height,display:s.display,direction:s.flexDirection};
+      }));
+    };
+    const before = await geometry(true), after = await geometry(false);
+    assert(JSON.stringify(before) === JSON.stringify(after), 'Desktop geometry unchanged at ' + width + 'px');
+    assert(await page.locator('.mobile-dock').count() === 0, 'Desktop has no mobile controls at ' + width + 'px');
+  }
+  assert(errors.length === 0, 'No uncaught browser errors: ' + errors.join('; '));
+  return { passed: passed.length, checks: passed, uncaughtErrors: errors };
+  } catch (error) {
+    throw new Error('After ' + passed.length + ' checks (' + passed.slice(-1) + '), URL ' + page.url() + ': ' + error.message);
+  }
+}

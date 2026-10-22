@@ -1,4 +1,5 @@
 // inboxCards is also used by reviewGrid section below
+window.__IFTO_MOBILE_ACTIVE = !!document.querySelector('.ifto-container.ifto-phone');
 var inboxCards = [
   {add:true,title:'新建收集'},
   ...Array(9).fill().map(()=>({title:'收集文件',date:'date：YYYYMMDD'}))
@@ -57,6 +58,8 @@ var inboxCards = [
   }, true);
 
   function restoreFocus(){
+    // Do not reopen the phone keyboard when returning from a note or menu.
+    if(window.__IFTO_MOBILE_ACTIVE) return;
     var target = (lastIftoEditable && document.body.contains(lastIftoEditable)) ? lastIftoEditable : null;
     var doFocus = function(){
       if(target && document.body.contains(target)){
@@ -182,6 +185,7 @@ async function renderInboxCollect(grid) {
   var allDetails = all.files || [];
   // Filter out hidden files (starting with .)
   allDetails = allDetails.filter(function(f){ return f.name && f.name[0] !== '.'; });
+  if(window.__IFTO_MOBILE_ACTIVE) totalFiles = allDetails.length;
 
   // Sort by creation time
   allDetails.sort(function(a, b) {
@@ -192,10 +196,10 @@ async function renderInboxCollect(grid) {
 
   // Page 1: add button + items (4 rows). Other pages: items only (4 rows)
   var gridWidth = grid.clientWidth - 48; // subtract padding (24px each side)
-  var itemsPerRow = Math.max(1, Math.floor((gridWidth + 10) / 210)); // card 200px + gap 10px
+  var itemsPerRow = window.__IFTO_MOBILE_ACTIVE ? 2 : Math.max(1, Math.floor((gridWidth + 10) / 210)); // phones always use two columns, including hidden panels
   var rowsPerPage = 4;
   var itemsPerPage = itemsPerRow * rowsPerPage;
-  var page1Slots = itemsPerPage - 1; // one slot reserved for add button
+  var page1Slots = itemsPerPage - (window.__IFTO_MOBILE_ACTIVE ? 0 : 1); // phone creation lives in the shared dock
   var otherSlots = itemsPerPage;
   var totalPages = 1;
   if(totalFiles > page1Slots) totalPages = 1 + Math.ceil((totalFiles - page1Slots) / otherSlots);
@@ -207,7 +211,7 @@ async function renderInboxCollect(grid) {
   var pf = allDetails.slice(start, start + count);
 
   var html = '';
-  if(inboxPage === 1) {
+  if(inboxPage === 1 && !window.__IFTO_MOBILE_ACTIVE) {
     html += '<div class="card card-add" id="collect-add-btn"><span class="ci">+</span><span class="cl">新建收集</span></div>';
   }
   for(var i=0;i<pf.length;i++) {
@@ -261,7 +265,7 @@ async function renderInboxOrganize(grid) {
 
   // 4 rows per page, calculated from grid width (estimate card area = total - sidebar 180px - gap 16px)
   var ogW = grid.clientWidth - 48 - 180 - 16;
-  var itemsPerRow = Math.max(1, Math.floor((ogW + 10) / 210));
+  var itemsPerRow = window.__IFTO_MOBILE_ACTIVE ? 2 : Math.max(1, Math.floor((ogW + 10) / 210));
   var itemsPerPage = itemsPerRow * 4;
   var totalPages = Math.ceil(allDetails.length / itemsPerPage) || 1;
   if(inboxPage > totalPages) inboxPage = totalPages;
@@ -692,7 +696,7 @@ async function renderInboxLearn(grid) {
 
   // 4 rows per page, calculated from grid width
   var gridW = grid.clientWidth - 48;
-  var itemsPerRow = Math.max(1, Math.floor((gridW + 10) / 210));
+  var itemsPerRow = window.__IFTO_MOBILE_ACTIVE ? 2 : Math.max(1, Math.floor((gridW + 10) / 210));
   var itemsPerPage = itemsPerRow * 4;
   var totalPages = Math.ceil(allDetails.length / itemsPerPage) || 1;
   if(inboxPage > totalPages) inboxPage = totalPages;
@@ -2881,7 +2885,7 @@ try { renderNote(); } catch(e){console.error('IFTO: init note error',e)}
 var REVIEW_TABS = ['daily','weekly','monthly','project'];
 var reviewTab = 'daily';
 var reviewPage = 1;
-var reviewPerPage = 12;
+var reviewPerPage = window.__IFTO_MOBILE_ACTIVE ? 7 : 12;
 
 function getReviewFolder(tab) {
   var s = window.__IFTO_SETTINGS || {};
@@ -5221,6 +5225,7 @@ document.getElementById('heroDomainLabel')?.addEventListener('click', function(e
 // 滚动到指定区块：定位最近的滚动容器并用容器坐标计算
 // （scrollIntoView 在 Obsidian 的嵌套容器里经常失效，导致"点了没反应"）
 function scrollToSection(id){
+  if(window.__IFTO_MOBILE_ACTIVE && window.__IFTO_mobileNavigate) { window.__IFTO_mobileNavigate(id); return; }
   var el = document.getElementById(id);
   if(id === 'home' || !el){
     var pg = document.querySelector('.page') || document.scrollingElement || document.documentElement;
@@ -5259,6 +5264,7 @@ var navItems = document.querySelectorAll('.nav-item');
 var navSections = ['home','inbox','todo','project','note','review'];
 var navScrollPending = false;
 function updateActiveNav(){
+  if(window.__IFTO_MOBILE_ACTIVE) return;
   if(navClickActive) return;
   let cur = navSections[0];
   for(const id of navSections){
