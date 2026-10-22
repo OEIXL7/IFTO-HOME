@@ -123,14 +123,20 @@
     brandToggle.appendChild(brandMark);
   }
   root.appendChild(brandToggle);
+  var brandAlignmentFrame = 0;
+  var brandFrame = root.closest('.view-content') || root.parentElement || root;
   function alignBrandToViewport() {
+    if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
     brandToggle.style.setProperty('--mobile-brand-right', '0px');
-    requestAnimationFrame(function() {
-      var viewportRight = window.visualViewport ? window.visualViewport.offsetLeft + window.visualViewport.width : window.innerWidth;
-      var gap = viewportRight - brandToggle.getBoundingClientRect().right;
-      if (gap > 0.5) brandToggle.style.setProperty('--mobile-brand-right', (-gap) + 'px');
+    brandAlignmentFrame = requestAnimationFrame(function() {
+      brandAlignmentFrame = 0;
+      var frameRight = brandFrame.getBoundingClientRect().right;
+      var correction = brandToggle.getBoundingClientRect().right - frameRight;
+      if (Math.abs(correction) > 0.5) brandToggle.style.setProperty('--mobile-brand-right', correction + 'px');
     });
   }
+  var brandResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(alignBrandToViewport) : null;
+  if (brandResizeObserver) { brandResizeObserver.observe(root); if (brandFrame !== root) brandResizeObserver.observe(brandFrame); }
   alignBrandToViewport();
   on(window, 'resize', alignBrandToViewport);
   if (window.visualViewport) on(window.visualViewport, 'resize', alignBrandToViewport);
@@ -612,6 +618,8 @@
   navigate('home');
   window.__IFTO_mobileCleanup = function() {
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
+    if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
+    if (brandResizeObserver) brandResizeObserver.disconnect();
     window.clearTimeout(shortcutHideTimer);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
     if (coverSlide && widgetCard) {

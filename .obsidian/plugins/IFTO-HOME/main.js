@@ -835,8 +835,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   --ifto-scale: 1;
   --ifto-host-top-inset: max(52px, env(safe-area-inset-top, 0px));
   --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
-  --ifto-brand-width: 56px;
-  --ifto-brand-height: 150px;
+  --ifto-brand-width: 84px;
+  --ifto-brand-height: 225px;
   --mobile-panel-bg: var(--g6, #f2f2f2);
   position: relative; overflow: visible !important; overscroll-behavior-x: none;
   min-width: 0;
@@ -1109,7 +1109,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone.mobile-keyboard .mobile-dock { display: none; }
 .ifto-phone.mobile-keyboard .mobile-brand-toggle { display: none; }
 @media (max-height: 600px) {
-.ifto-phone { --ifto-brand-width: 56px; --ifto-brand-height: 140px; }
+.ifto-phone { --ifto-brand-width: 72px; --ifto-brand-height: 189px; }
   .ifto-phone .mobile-dock { bottom: calc(var(--ifto-host-bottom-inset) + 8px); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); }
 }
 .ifto-phone .mobile-more { position: absolute; top: 0; right: 0; width: 32px; height: 32px; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--ifto-text-2); font-size: 20px; z-index: 2; }
@@ -1125,7 +1125,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-sheet .mobile-sheet-cancel { text-align: center; margin-top: 10px; border: 0; background: var(--g6); }
 
 /* Final phone polish from device review. */
-.ifto-container.ifto-phone { --ifto-brand-width: 56px; --ifto-brand-height: 150px; }
+.ifto-container.ifto-phone { --ifto-brand-width: 84px; --ifto-brand-height: 225px; }
 .ifto-phone .mobile-brand-toggle {
   position: fixed !important; right: var(--mobile-brand-right, 0px) !important;
   appearance: none !important; -webkit-appearance: none !important;
@@ -1148,7 +1148,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   position: absolute; top: auto !important; bottom: 0; margin: 0 !important;
   line-height: 1 !important;
 }
-.ifto-phone .mobile-home-heading .hero-watermark { left: 11px; font-weight: 350; }
+.ifto-phone .mobile-home-heading .hero-watermark { left: 11px; font-size: clamp(48px, 19.2vw, 72px); font-weight: 350; }
 .ifto-phone .mobile-home-heading .hero-brand { left: 13px; }
 .ifto-phone .section-title-wrap .section-title { font-weight: 350 !important; }
 .ifto-phone .mobile-home-cover { box-shadow: none !important; }
@@ -1178,7 +1178,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .activity-grid .card-sm > div { align-items: center !important; }
 .ifto-phone .activity-grid .card-sm > :not(.mobile-more) { align-self: center; }
 @media (max-height: 600px) {
-  .ifto-container.ifto-phone { --ifto-brand-width: 48px; --ifto-brand-height: 126px; }
+  .ifto-container.ifto-phone { --ifto-brand-width: 72px; --ifto-brand-height: 189px; }
 }
 .ifto-phone .ifto-confirm-overlay { z-index: 1100; }
 @media (max-width: 350px) {
@@ -6895,14 +6895,20 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     brandToggle.appendChild(brandMark);
   }
   root.appendChild(brandToggle);
+  var brandAlignmentFrame = 0;
+  var brandFrame = root.closest('.view-content') || root.parentElement || root;
   function alignBrandToViewport() {
+    if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
     brandToggle.style.setProperty('--mobile-brand-right', '0px');
-    requestAnimationFrame(function() {
-      var viewportRight = window.visualViewport ? window.visualViewport.offsetLeft + window.visualViewport.width : window.innerWidth;
-      var gap = viewportRight - brandToggle.getBoundingClientRect().right;
-      if (gap > 0.5) brandToggle.style.setProperty('--mobile-brand-right', (-gap) + 'px');
+    brandAlignmentFrame = requestAnimationFrame(function() {
+      brandAlignmentFrame = 0;
+      var frameRight = brandFrame.getBoundingClientRect().right;
+      var correction = brandToggle.getBoundingClientRect().right - frameRight;
+      if (Math.abs(correction) > 0.5) brandToggle.style.setProperty('--mobile-brand-right', correction + 'px');
     });
   }
+  var brandResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(alignBrandToViewport) : null;
+  if (brandResizeObserver) { brandResizeObserver.observe(root); if (brandFrame !== root) brandResizeObserver.observe(brandFrame); }
   alignBrandToViewport();
   on(window, 'resize', alignBrandToViewport);
   if (window.visualViewport) on(window.visualViewport, 'resize', alignBrandToViewport);
@@ -7384,6 +7390,8 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   navigate('home');
   window.__IFTO_mobileCleanup = function() {
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
+    if (brandAlignmentFrame) cancelAnimationFrame(brandAlignmentFrame);
+    if (brandResizeObserver) brandResizeObserver.disconnect();
     window.clearTimeout(shortcutHideTimer);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
     if (coverSlide && widgetCard) {

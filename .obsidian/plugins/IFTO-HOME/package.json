@@ -1,6 +1,6 @@
 {
   "name": "ifto-home",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
