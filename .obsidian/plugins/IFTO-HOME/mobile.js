@@ -36,6 +36,25 @@
   var zoom = root.querySelector('#domainZoomCtrl');
   if (domain) area.appendChild(domain);
   if (zoom) area.appendChild(zoom);
+  var heroImage = root.querySelector('#heroImage');
+  var heroImageParent = heroImage && heroImage.parentNode;
+  var heroImageNext = heroImage && heroImage.nextSibling;
+  var homeLeft = root.querySelector('#home .hero-left');
+  var widgetCard = root.querySelector('#widgetCard');
+  var widgetDots = root.querySelector('#widgetDots');
+  var coverSlide = null, homeCoverActive = true;
+  if (heroImage && homeLeft && widgetCard) {
+    coverSlide = document.createElement('div');
+    coverSlide.className = 'mobile-home-cover';
+    coverSlide.setAttribute('aria-label', '首页封面图片');
+    homeLeft.insertBefore(coverSlide, widgetCard);
+    coverSlide.appendChild(heroImage);
+    heroImage.classList.add('mobile-cover-image');
+    var domainLabel = heroImage.querySelector('#heroDomainLabel');
+    if (domainLabel) domainLabel.hidden = true;
+    widgetCard.hidden = true;
+    if (widgetDots) widgetDots.hidden = true;
+  }
   ids.forEach(function(id) {
     var section = id === 'area' ? area : root.querySelector('#' + id);
     if (!section) return;
@@ -129,6 +148,85 @@
     }
   }
   window.__IFTO_mobileNavigate = navigate;
+
+  // On phones the home carousel starts with the configured cover image, then
+  // continues through the existing widgets. Desktop widget rendering remains
+  // untouched because these handlers only exist in this phone controller.
+  if (coverSlide && widgetCard) {
+    var originalWidgetNext = window.widgetNext;
+    var originalWidgetPrev = window.widgetPrev;
+    var originalGoToWidget = window.goToWidget;
+    var originalUpdateWidgetDots = window.updateWidgetDots;
+    function showHomeCover() {
+      homeCoverActive = true;
+      coverSlide.hidden = false;
+      widgetCard.hidden = true;
+      if (widgetDots) widgetDots.hidden = false;
+      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
+      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
+      if (coverDot) coverDot.classList.add('active');
+      if (widgetDots) widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)').forEach(function(dot) { dot.classList.remove('active'); });
+    }
+    function showHomeWidget() {
+      homeCoverActive = false;
+      coverSlide.hidden = true;
+      widgetCard.hidden = false;
+      if (widgetDots) widgetDots.hidden = false;
+      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
+      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
+      if (coverDot) coverDot.classList.remove('active');
+      var activeDot = widgetDots && widgetDots.querySelectorAll('.widget-dot')[((window.curWidget || 0) + 1)];
+      if (activeDot) activeDot.classList.add('active');
+    }
+    window.goToWidget = function(index) { showHomeWidget(); if (originalGoToWidget) originalGoToWidget(index); };
+    window.updateWidgetDots = function() {
+      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
+      if (!widgetDots) return;
+      var dot = widgetDots.querySelector('.mobile-cover-dot');
+      if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'widget-dot mobile-cover-dot';
+        dot.setAttribute('role', 'button'); dot.setAttribute('aria-label', '封面图片');
+        dot.setAttribute('tabindex', '0');
+        widgetDots.prepend(dot);
+      }
+      dot.classList.toggle('active', homeCoverActive);
+      var activeDot = widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)')[(window.curWidget || 0) + 1];
+      if (activeDot) activeDot.classList.toggle('active', !homeCoverActive);
+    };
+    if (widgetDots) {
+      on(widgetDots, 'click', function(e) {
+        if (!e.target.closest('.mobile-cover-dot')) return;
+        e.preventDefault(); e.stopImmediatePropagation(); showHomeCover();
+      }, { capture: true });
+      on(widgetDots, 'keydown', function(e) {
+        if (!e.target.closest('.mobile-cover-dot') || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault(); showHomeCover();
+      });
+    }
+    var prevButton = root.querySelector('#widgetPrev');
+    var nextButton = root.querySelector('#widgetNext');
+    if (prevButton) on(prevButton, 'click', function(e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (homeCoverActive) {
+        var count = Array.isArray(window._widgetList) ? window._widgetList.length : 0;
+        if (count && originalGoToWidget) { showHomeWidget(); originalGoToWidget(count - 1); }
+      } else if ((window.curWidget || 0) === 0) showHomeCover();
+      else if (originalWidgetPrev) originalWidgetPrev();
+    }, { capture: true });
+    if (nextButton) on(nextButton, 'click', function(e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (homeCoverActive) {
+        if (originalGoToWidget && Array.isArray(window._widgetList) && window._widgetList.length) originalGoToWidget(0);
+        showHomeWidget();
+      } else {
+        var count = Array.isArray(window._widgetList) ? window._widgetList.length : 0;
+        if (count && (window.curWidget || 0) >= count - 1) showHomeCover();
+        else if (originalWidgetNext) originalWidgetNext();
+      }
+    }, { capture: true });
+    window.updateWidgetDots();
+  }
   on(root, 'click', function(e) {
     if (Date.now() < suppressClickUntil) { e.preventDefault(); e.stopImmediatePropagation(); return; }
     var link = e.target.closest('a[href^="#"]');
@@ -490,6 +588,19 @@
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
     window.clearTimeout(shortcutHideTimer);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
+    if (coverSlide && widgetCard) {
+      window.widgetNext = originalWidgetNext;
+      window.widgetPrev = originalWidgetPrev;
+      window.goToWidget = originalGoToWidget;
+      window.updateWidgetDots = originalUpdateWidgetDots;
+      widgetCard.hidden = false;
+      if (widgetDots) widgetDots.hidden = false;
+    }
+    if (heroImage && heroImageParent) {
+      heroImage.classList.remove('mobile-cover-image');
+      if (heroImageNext && heroImageNext.parentNode === heroImageParent) heroImageParent.insertBefore(heroImage, heroImageNext);
+      else heroImageParent.appendChild(heroImage);
+    }
     dock.remove(); brandToggle.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;

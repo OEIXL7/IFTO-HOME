@@ -957,15 +957,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .hero-brand { position: absolute; margin: 0; top: 49px; left: 13px; font-size: clamp(36px, 12.8vw, 48px); line-height: 1; font-weight: 300; }
 .ifto-phone .hero-left { display: flex; width: 100%; padding: 0; min-width: 0; }
 .ifto-phone .hero-right { display: none !important; }
+.ifto-phone .mobile-home-cover {
+  order: 1; position: relative; width: 100%; height: 380px; min-height: 320px;
+  margin: 0; overflow: hidden; flex: 0 0 auto; background: var(--mobile-panel-bg);
+  box-shadow: var(--ifto-shadow);
+}
+.ifto-phone .mobile-home-cover[hidden] { display: none !important; }
+.ifto-phone #heroImage.mobile-cover-image {
+  display: block; position: relative; width: 100%; height: 100%; min-height: 0;
+  overflow: hidden; background-color: var(--mobile-panel-bg); background-size: cover !important;
+  background-position: center !important; background-repeat: no-repeat !important;
+}
+.ifto-phone #heroRefreshLabel { width: 112px; height: 52px; font-size: 15px; letter-spacing: 2px; }
+.ifto-phone #heroRefreshLabel::after { bottom: 8px; }
+.ifto-phone #heroDomainLabel, .ifto-phone #heroImage > div[style*="left:110px"] { display: none !important; }
 .ifto-phone .widget-card {
-  order: 1; width: 100% !important; height: 380px; min-height: 320px !important;
+  order: 2; width: 100% !important; height: 380px; min-height: 320px !important;
   max-width: none; padding: 16px; margin: 0; flex-shrink: 0; border-radius: 0 !important;
 }
-.ifto-phone .hero-nav-row { order: 2; margin: 14px 0 0; justify-content: center; }
+.ifto-phone .hero-nav-row { order: 3; margin: 14px 0 0; justify-content: center; }
 .ifto-phone .hero-nav-area { gap: 22px; margin: 0; }
 .ifto-phone .hero-divider { display: none; }
 .ifto-phone .btn-arrow { width: 53px; height: 53px; background: var(--ifto-card-bg); border-radius: 0 !important; }
-.ifto-phone .widget-indicators { order: 3; width: 100%; margin: 10px 0 4px; }
+.ifto-phone .widget-indicators { order: 4; width: 100%; margin: 10px 0 4px; }
 
 /* TODO uses a vertical list followed by an activity grid. */
 .ifto-phone .todo-layout { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
@@ -6713,6 +6727,25 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   var zoom = root.querySelector('#domainZoomCtrl');
   if (domain) area.appendChild(domain);
   if (zoom) area.appendChild(zoom);
+  var heroImage = root.querySelector('#heroImage');
+  var heroImageParent = heroImage && heroImage.parentNode;
+  var heroImageNext = heroImage && heroImage.nextSibling;
+  var homeLeft = root.querySelector('#home .hero-left');
+  var widgetCard = root.querySelector('#widgetCard');
+  var widgetDots = root.querySelector('#widgetDots');
+  var coverSlide = null, homeCoverActive = true;
+  if (heroImage && homeLeft && widgetCard) {
+    coverSlide = document.createElement('div');
+    coverSlide.className = 'mobile-home-cover';
+    coverSlide.setAttribute('aria-label', '\u9996\u9875\u5C01\u9762\u56FE\u7247');
+    homeLeft.insertBefore(coverSlide, widgetCard);
+    coverSlide.appendChild(heroImage);
+    heroImage.classList.add('mobile-cover-image');
+    var domainLabel = heroImage.querySelector('#heroDomainLabel');
+    if (domainLabel) domainLabel.hidden = true;
+    widgetCard.hidden = true;
+    if (widgetDots) widgetDots.hidden = true;
+  }
   ids.forEach(function(id) {
     var section = id === 'area' ? area : root.querySelector('#' + id);
     if (!section) return;
@@ -6806,6 +6839,85 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     }
   }
   window.__IFTO_mobileNavigate = navigate;
+
+  // On phones the home carousel starts with the configured cover image, then
+  // continues through the existing widgets. Desktop widget rendering remains
+  // untouched because these handlers only exist in this phone controller.
+  if (coverSlide && widgetCard) {
+    var originalWidgetNext = window.widgetNext;
+    var originalWidgetPrev = window.widgetPrev;
+    var originalGoToWidget = window.goToWidget;
+    var originalUpdateWidgetDots = window.updateWidgetDots;
+    function showHomeCover() {
+      homeCoverActive = true;
+      coverSlide.hidden = false;
+      widgetCard.hidden = true;
+      if (widgetDots) widgetDots.hidden = false;
+      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
+      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
+      if (coverDot) coverDot.classList.add('active');
+      if (widgetDots) widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)').forEach(function(dot) { dot.classList.remove('active'); });
+    }
+    function showHomeWidget() {
+      homeCoverActive = false;
+      coverSlide.hidden = true;
+      widgetCard.hidden = false;
+      if (widgetDots) widgetDots.hidden = false;
+      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
+      var coverDot = widgetDots && widgetDots.querySelector('.mobile-cover-dot');
+      if (coverDot) coverDot.classList.remove('active');
+      var activeDot = widgetDots && widgetDots.querySelectorAll('.widget-dot')[((window.curWidget || 0) + 1)];
+      if (activeDot) activeDot.classList.add('active');
+    }
+    window.goToWidget = function(index) { showHomeWidget(); if (originalGoToWidget) originalGoToWidget(index); };
+    window.updateWidgetDots = function() {
+      if (originalUpdateWidgetDots) originalUpdateWidgetDots();
+      if (!widgetDots) return;
+      var dot = widgetDots.querySelector('.mobile-cover-dot');
+      if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'widget-dot mobile-cover-dot';
+        dot.setAttribute('role', 'button'); dot.setAttribute('aria-label', '\u5C01\u9762\u56FE\u7247');
+        dot.setAttribute('tabindex', '0');
+        widgetDots.prepend(dot);
+      }
+      dot.classList.toggle('active', homeCoverActive);
+      var activeDot = widgetDots.querySelectorAll('.widget-dot:not(.mobile-cover-dot)')[(window.curWidget || 0) + 1];
+      if (activeDot) activeDot.classList.toggle('active', !homeCoverActive);
+    };
+    if (widgetDots) {
+      on(widgetDots, 'click', function(e) {
+        if (!e.target.closest('.mobile-cover-dot')) return;
+        e.preventDefault(); e.stopImmediatePropagation(); showHomeCover();
+      }, { capture: true });
+      on(widgetDots, 'keydown', function(e) {
+        if (!e.target.closest('.mobile-cover-dot') || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault(); showHomeCover();
+      });
+    }
+    var prevButton = root.querySelector('#widgetPrev');
+    var nextButton = root.querySelector('#widgetNext');
+    if (prevButton) on(prevButton, 'click', function(e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (homeCoverActive) {
+        var count = Array.isArray(window._widgetList) ? window._widgetList.length : 0;
+        if (count && originalGoToWidget) { showHomeWidget(); originalGoToWidget(count - 1); }
+      } else if ((window.curWidget || 0) === 0) showHomeCover();
+      else if (originalWidgetPrev) originalWidgetPrev();
+    }, { capture: true });
+    if (nextButton) on(nextButton, 'click', function(e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (homeCoverActive) {
+        if (originalGoToWidget && Array.isArray(window._widgetList) && window._widgetList.length) originalGoToWidget(0);
+        showHomeWidget();
+      } else {
+        var count = Array.isArray(window._widgetList) ? window._widgetList.length : 0;
+        if (count && (window.curWidget || 0) >= count - 1) showHomeCover();
+        else if (originalWidgetNext) originalWidgetNext();
+      }
+    }, { capture: true });
+    window.updateWidgetDots();
+  }
   on(root, 'click', function(e) {
     if (Date.now() < suppressClickUntil) { e.preventDefault(); e.stopImmediatePropagation(); return; }
     var link = e.target.closest('a[href^="#"]');
@@ -7167,6 +7279,19 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
     window.clearTimeout(shortcutHideTimer);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
+    if (coverSlide && widgetCard) {
+      window.widgetNext = originalWidgetNext;
+      window.widgetPrev = originalWidgetPrev;
+      window.goToWidget = originalGoToWidget;
+      window.updateWidgetDots = originalUpdateWidgetDots;
+      widgetCard.hidden = false;
+      if (widgetDots) widgetDots.hidden = false;
+    }
+    if (heroImage && heroImageParent) {
+      heroImage.classList.remove('mobile-cover-image');
+      if (heroImageNext && heroImageNext.parentNode === heroImageParent) heroImageParent.insertBefore(heroImage, heroImageNext);
+      else heroImageParent.appendChild(heroImage);
+    }
     dock.remove(); brandToggle.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;

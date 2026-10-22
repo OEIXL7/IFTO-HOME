@@ -28,9 +28,12 @@ async (page) => {
   assert(phoneLogo.bottom < phoneLogo.viewport - 80 && phoneLogo.top > phoneLogo.viewport / 2, 'Phone brand toggle sits at the bottom-right above Obsidian controls');
   assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && parseFloat(getComputedStyle(el).width) >= 130; }), 'Enlarged IFTO mark remains fully visible at the viewport edge');
   assert(await page.locator('.nav-item').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 18), 'Phone navigation type matches habit heading size');
+  assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden && el.querySelector('#heroImage')), 'Home opens on the configured cover image');
+  assert(await page.locator('#widgetCard').evaluate(el => el.hidden), 'First home slide hides widgets behind the cover');
+  assert(await page.locator('#widgetDots .mobile-cover-dot.active').count() === 1, 'Cover image is the active first carousel page');
   const homeGeometry = await page.evaluate(() => ({
     title: document.querySelector('.hero-brand').getBoundingClientRect().bottom,
-    widget: document.querySelector('.widget-card').getBoundingClientRect().top,
+    widget: document.querySelector('.mobile-home-cover').getBoundingClientRect().top,
     viewport: innerHeight
   }));
   assert(homeGeometry.title < homeGeometry.widget, 'Home title above widget');
@@ -50,7 +53,11 @@ async (page) => {
   assert(await page.locator('.mobile-dock').evaluate(el => el.getAttribute('aria-hidden') === 'true'), 'Escape closes the shortcut panel');
   const widgetBefore = await page.evaluate(() => curWidget);
   await page.locator('#widgetNext').click();
-  assert(await page.evaluate(before => curWidget !== before && document.querySelector('.ifto-phone').dataset.mobilePage === 'home', widgetBefore), 'Widget arrows do not navigate pages');
+  assert(await page.evaluate(before => curWidget === before && document.querySelector('.mobile-home-cover').hidden && !document.querySelector('#widgetCard').hidden, widgetBefore), 'Next arrow advances from the cover to the first widget');
+  await page.locator('#widgetNext').click();
+  assert(await page.evaluate(before => curWidget !== before && document.querySelector('.ifto-phone').dataset.mobilePage === 'home', widgetBefore), 'Widget arrows continue through widgets without changing pages');
+  await page.locator('#widgetPrev').click(); await page.locator('#widgetPrev').click();
+  assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden), 'Previous arrow returns from the first widget to the cover');
   await page.screenshot({ path: 'output/playwright/mobile-home.png', scale: 'css' });
 
   for (const id of ['inbox','todo','project','area','note','review']) {
