@@ -1118,7 +1118,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-dock.is-open { opacity: 1; visibility: visible; transform: scale(1); pointer-events: auto; transition-delay: 0s; }
 .ifto-phone #home .hero-title, .ifto-phone .mobile-dock .hero-title { display: none !important; }
 .ifto-phone .mobile-dock .shortcuts { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 7px !important; width: 100% !important; margin: 0 !important; }
-.ifto-phone .mobile-dock .btn-s { position: relative; display: flex; flex-direction: row; justify-content: center; gap: 8px; width: 100% !important; height: 42px !important; min-height: 42px; padding: 0 8px !important; text-align: center; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; opacity: 0; transform: translateY(-4px); transition: opacity 150ms ease, transform 180ms ease; }
+.ifto-phone .mobile-dock .btn-s { position: relative; display: flex; flex-direction: row; justify-content: center; gap: 0; width: 100% !important; height: 42px !important; min-height: 42px; padding: 0 8px !important; text-align: center; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; opacity: 0; transform: translateY(-4px); transition: opacity 150ms ease, transform 180ms ease; }
 .ifto-phone .mobile-dock.is-open .btn-s { opacity: 1; transform: translateY(0); }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(1) { transition-delay: 45ms; }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(2) { transition-delay: 85ms; }
@@ -1133,10 +1133,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 }
 .ifto-phone .mobile-dock.is-open .mobile-return-home { opacity: 1; transform: translateY(0); transition-delay: 205ms; }
 .ifto-phone .mobile-dock .s-label { font-size: 13px !important; letter-spacing: 0; }
-.ifto-phone .mobile-dock .s-icon { position: absolute; left: 14px; font-size: 20px !important; font-weight: 300; }
+.ifto-phone .mobile-dock .s-icon { position: static; left: auto; font-size: 20px !important; font-weight: 300; }
 .ifto-phone .card-add, .ifto-phone .card-sm.add-card, .ifto-phone .note-add-btn { gap: 3px !important; }
 .ifto-phone .card-add .ci, .ifto-phone .card-sm.add-card .ci, .ifto-phone .note-add-btn .ci { margin: 0; line-height: 1; }
-.ifto-phone .mobile-dock .btn-s { gap: 4px; }
+.ifto-phone .mobile-dock .btn-s { gap: 0; }
 .ifto-phone .mobile-note-nav .slide-btn { width: 48px; height: 48px; min-width: 48px; min-height: 48px; font-size: 16px; }
 .ifto-phone .mobile-note-nav .slide-num { min-width: 55px; text-align: center; }
 .ifto-phone .mobile-page-watermark {
