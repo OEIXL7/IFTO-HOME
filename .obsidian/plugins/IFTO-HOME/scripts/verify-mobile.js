@@ -124,7 +124,12 @@ async (page) => {
     if (id === 'inbox' || id === 'review') {
       const grid = page.locator('#' + (id === 'inbox' ? 'inboxGrid' : 'reviewGrid'));
       assert(await grid.evaluate(el => el.clientHeight === 358 && el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), id + ' cards scroll inside the fixed display area');
-      assert(await grid.evaluate(el => parseFloat(getComputedStyle(el).rowGap) >= 14), id + ' cards have a clear vertical gap');
+      assert(await grid.evaluate(el => {
+        const cards = [...el.children].filter(card => card.getBoundingClientRect().width > 0);
+        if (cards.length < 3) return false;
+        const first = cards[0].getBoundingClientRect(), second = cards[1].getBoundingClientRect(), third = cards[2].getBoundingClientRect();
+        return second.left - first.right >= 11 && third.top - Math.max(first.bottom, second.bottom) >= 11;
+      }), id + ' cards have visible horizontal and vertical gutters');
     }
     if (id === 'note') assert(await page.locator('#noteGrid').evaluate(el => parseFloat(getComputedStyle(el).height) > parseFloat(getComputedStyle(document.querySelector('#area .dt-scroll')).height) && getComputedStyle(el).overflowY === 'auto'), 'Reading area is taller than AREA and scrolls overflow internally');
     if (id === 'area') assert(await page.locator('#area .dt-scroll').evaluate(el => el.clientHeight >= 220 && el.clientHeight <= 440 && getComputedStyle(el).overflowY === 'auto'), 'AREA cards scroll inside their fixed display area');

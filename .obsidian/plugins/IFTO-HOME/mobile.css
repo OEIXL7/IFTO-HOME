@@ -112,8 +112,11 @@
 .ifto-phone .card-grid, .ifto-phone .note-grid, .ifto-phone .activity-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-auto-rows: minmax(80px, auto); align-content: start;
-  justify-items: stretch; row-gap: 14px !important; column-gap: 9px !important; padding: 10px; min-width: 0; width: 100%;
+  justify-items: stretch; gap: 12px !important; padding: 10px; min-width: 0; width: 100%;
   background: var(--mobile-panel-bg); border: 0; min-height: 0; height: auto; overflow: visible; border-radius: 0 !important;
+}
+.ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid.card-grid {
+  grid-auto-rows: minmax(96px, auto); row-gap: 12px !important; column-gap: 12px !important;
 }
 .ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid { min-height: 358px; }
 .ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid.card-grid {
