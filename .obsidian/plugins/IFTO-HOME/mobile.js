@@ -61,23 +61,23 @@
     section.classList.add('mobile-panel');
     section.setAttribute('aria-label', id.toUpperCase());
     section.hidden = id !== current;
-    var watermark = document.createElement('div');
-    watermark.className = 'mobile-page-watermark';
-    watermark.setAttribute('aria-label', 'IFTO 与 IFUS');
-    var footerLogo = root.querySelector('.footer-social img');
-    if (footerLogo) {
-      var watermarkLogo = footerLogo.cloneNode(true);
-      watermarkLogo.alt = 'IFTO × IFUS';
-      watermark.appendChild(watermarkLogo);
-    }
-    var watermarkCopy = document.createElement('span');
-    watermarkCopy.textContent = '© 2026 Designed by IFTO&IFUS';
-    watermark.appendChild(watermarkCopy);
-    section.appendChild(watermark);
     rail.appendChild(section);
   });
   var header = root.querySelector('.header');
   header.after(rail);
+  var watermark = document.createElement('div');
+  watermark.className = 'mobile-page-watermark';
+  watermark.setAttribute('aria-label', 'IFTO 与 IFUS');
+  var footerLogo = root.querySelector('.footer-social img');
+  if (footerLogo) {
+    var watermarkLogo = footerLogo.cloneNode(true);
+    watermarkLogo.alt = 'IFTO × IFUS';
+    watermark.appendChild(watermarkLogo);
+  }
+  var watermarkCopy = document.createElement('span');
+  watermarkCopy.textContent = '© 2026 Designed by IFTO&IFUS';
+  watermark.appendChild(watermarkCopy);
+  root.appendChild(watermark);
   var nav = root.querySelector('.nav-items');
   var areaLink = document.createElement('a');
   areaLink.href = '#area'; areaLink.className = 'nav-item'; areaLink.textContent = 'AREA领域';
@@ -89,9 +89,8 @@
   dock.className = 'mobile-dock';
   dock.id = 'mobile-shortcuts';
   dock.hidden = true;
-  var shortcutTitle = root.querySelector('.hero-title');
   var shortcuts = root.querySelector('.shortcuts');
-  dock.appendChild(shortcutTitle); dock.appendChild(shortcuts);
+  dock.appendChild(shortcuts);
   shortcuts.querySelectorAll('.btn-s').forEach(function(b) {
     b.setAttribute('aria-label', b.textContent.replace('+', '').trim());
     b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^新建/, '');

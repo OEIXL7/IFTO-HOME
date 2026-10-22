@@ -26,9 +26,10 @@ async (page) => {
   const phoneLogo = await page.locator('.mobile-brand-toggle').evaluate(el => { const r = el.getBoundingClientRect(); return {right:r.right,bottom:r.bottom,top:r.top,width:parseFloat(getComputedStyle(el).width),viewport:innerHeight}; });
   assert(Math.abs(phoneLogo.right - 375) < 1, 'Phone brand toggle sits flush with the viewport edge');
   assert(phoneLogo.bottom < phoneLogo.viewport - 80 && phoneLogo.top > phoneLogo.viewport / 2, 'Phone brand toggle sits at the bottom-right above Obsidian controls');
-    assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && parseFloat(getComputedStyle(el).width) >= 124; }), 'Enlarged IFTO mark remains fully visible at the viewport edge');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect(); return r.left >= 0 && Math.abs(r.right - innerWidth) < 1 && Math.abs(r.width - b.width) < 1 && Math.abs(r.height - b.height) < 1 && r.height >= 199; }), 'IFTO artwork itself fills the enlarged edge-aligned tap target');
   assert(await page.locator('.nav-item').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 18), 'Phone navigation type matches habit heading size');
-  assert(await page.locator('.mobile-page-watermark').count() === 7 && await page.locator('.mobile-page-watermark img').count() === 7, 'Every phone page has the IFTO × IFUS watermark at its bottom');
+  assert(await page.locator('.mobile-page-watermark').count() === 1 && await page.locator('.mobile-page-watermark img').count() === 1, 'A single IFTO × IFUS watermark is fixed at the bottom of the phone view');
+  assert(await page.locator('.mobile-page-watermark').evaluate(el => Math.abs(el.getBoundingClientRect().bottom - innerHeight) <= 3 && el.querySelector('img').getBoundingClientRect().width <= 101 && parseFloat(getComputedStyle(el).fontSize) <= 6), 'Watermark is reduced and fixed beneath the Obsidian toolbar area');
   const homeHeadingTop = await page.locator('.hero-brand').evaluate(el => el.getBoundingClientRect().top);
   const headingTops = [], titleBaselines = [];
   for (const id of ['inbox','todo','project','area','note','review']) {
@@ -36,15 +37,18 @@ async (page) => {
     const metrics = await page.locator('#' + id + ' .section-title-wrap').evaluate(w => ({
       top: w.querySelector('.section-title-watermark').getBoundingClientRect().top,
       foregroundBottom: w.querySelector('.section-title-watermark').getBoundingClientRect().bottom,
-      watermarkBottom: w.querySelector('.section-title').getBoundingClientRect().bottom
+      watermarkBottom: w.querySelector('.section-title').getBoundingClientRect().bottom,
+      backgroundSize: parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize),
+      foregroundSize: parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize)
     }));
     headingTops.push(metrics.top); titleBaselines.push(Math.abs(metrics.foregroundBottom - metrics.watermarkBottom));
   }
   await go('home');
   assert(headingTops.every(top => Math.abs(top - homeHeadingTop) <= 8), 'All page headings align with the HOME heading position');
   assert(titleBaselines.every(delta => delta <= 1), 'English watermark and foreground title share one baseline');
+  assert(await page.locator('#inbox .section-title-wrap').evaluate(w => parseFloat(getComputedStyle(w.querySelector('.section-title')).fontSize) >= 60 && parseFloat(getComputedStyle(w.querySelector('.section-title-watermark')).fontSize) <= 48), 'Background English headings retain their original larger size');
   assert(await page.locator('#heroRefreshLabel').evaluate(el => getComputedStyle(el).borderRadius === '0px'), 'Cover refresh label keeps square corners');
-    assert(await page.locator('.mobile-brand-toggle').evaluate(el => parseFloat(getComputedStyle(el).width) >= 50), 'Logo tap target grows with the mark and remains edge aligned');
+  assert(await page.locator('.mobile-brand-toggle').evaluate(el => parseFloat(getComputedStyle(el).width) >= 80), 'Logo tap target matches the enlarged artwork and remains edge aligned');
   assert(await page.locator('.mobile-home-cover').evaluate(el => !el.hidden && el.querySelector('#heroImage')), 'Home opens on the configured cover image');
   assert(await page.locator('#widgetCard').evaluate(el => el.hidden), 'First home slide hides widgets behind the cover');
   assert(await page.locator('#widgetDots .mobile-cover-dot.active').count() === 1, 'Cover image is the active first carousel page');
@@ -62,10 +66,11 @@ async (page) => {
   assert(Math.abs(await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().top) - logoTop) < 1, 'IFTO logo stays fixed while page content scrolls');
   await go('home');
   await page.locator('.mobile-brand-toggle').click();
-  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight - 80 && el.getBoundingClientRect().width <= 155), 'Brand tap opens a compact on-screen shortcut panel beside the logo');
+  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight - 80 && el.getBoundingClientRect().width <= 155 && !el.querySelector('.hero-title')), 'Brand tap opens a title-free shortcut panel beside the logo');
   assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).transitionDuration.split(',').some(duration => parseFloat(duration) >= .2)), 'Shortcut panel expands with a transition');
   const shortcutTops = await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.map(el => el.getBoundingClientRect().top));
   assert(shortcutTops.every((top, i) => i === 0 || top > shortcutTops[i - 1]), 'Shortcut actions stack vertically');
+  assert(await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.every(el => getComputedStyle(el).justifyContent === 'center' && getComputedStyle(el.querySelector('.s-label')).textAlign === 'center')), 'Shortcut labels are centered inside all four buttons');
   await page.keyboard.press('Escape');
   assert(await page.locator('.mobile-dock').evaluate(el => el.getAttribute('aria-hidden') === 'true'), 'Escape closes the shortcut panel');
   const widgetBefore = await page.evaluate(() => curWidget);
@@ -82,6 +87,9 @@ async (page) => {
     assert(await page.locator('.mobile-panel:not([hidden])').count() === 1, 'Only ' + id + ' is visible');
     assert(await page.evaluate(id => { const el = document.getElementById(id); return el.scrollWidth <= el.clientWidth + 1; }, id), id + ' has no horizontal overflow');
     if (id === 'inbox') assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0), 'Collect cards display their tags');
+    if (id === 'inbox' || id === 'review') assert(await page.locator('#' + (id === 'inbox' ? 'inboxGrid' : 'reviewGrid')).evaluate(el => el.clientHeight === 358 && el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), id + ' cards scroll inside the fixed display area');
+    if (id === 'note') assert(await page.locator('#noteGrid').evaluate(el => el.clientHeight === 300 && getComputedStyle(el).overflowY === 'auto'), 'Reading cards stay in their fixed scroll area');
+    if (id === 'area') assert(await page.locator('#area .dt-scroll').evaluate(el => el.clientHeight >= 220 && el.clientHeight <= 440 && getComputedStyle(el).overflowY === 'auto'), 'AREA cards scroll inside their fixed display area');
     if (id === 'todo') assert(await page.locator('#todoList').evaluate(el => Math.abs(el.getBoundingClientRect().height - 158) < 1 && getComputedStyle(el).overflowY === 'auto'), 'Today todo shows about three rows and scrolls overflow inside its fixed list');
     if (id === 'project') assert(await page.locator('.project-col').evaluateAll(els => els.length > 0 && els.every(el => getComputedStyle(el).overflowY === 'visible' && el.scrollHeight <= el.clientHeight + 1)), 'Project statuses expand fully and leave scrolling to the page');
     if (id === 'area') await page.waitForSelector('#area .dt-card');
@@ -139,7 +147,7 @@ async (page) => {
   const projectScroll = await page.locator('.project-col[data-status="未开始"]').evaluate(el => ({height:el.clientHeight,scroll:el.scrollHeight,children:el.children.length,overflow:getComputedStyle(el).overflowY}));
   assert(projectScroll.overflow === 'visible' && projectScroll.scroll <= projectScroll.height + 1 && projectScroll.children >= 14, 'Project status content stays expanded for page-level scrolling ' + JSON.stringify(projectScroll));
   assert(await page.locator('#projectArchiveZone').evaluate(el => getComputedStyle(el).display === 'none'), 'Phone project view hides the dashed archive rail');
-  assert(await page.locator('#project .btn-project-new').first().evaluate(el => getComputedStyle(el).borderTopWidth === '0px' && getComputedStyle(el, '::before').content !== 'none'), 'Project creation uses compact line-style buttons');
+  assert(await page.locator('#project .btn-project-new').first().evaluate(el => getComputedStyle(el, '::before').display === 'none' && getComputedStyle(el, '::after').opacity === '0'), 'Project creation labels have no permanent top or bottom rules');
   await go('todo');
   const cb = page.locator('#todoList .cb').first();
   const openedBefore = await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'open').length);
@@ -238,7 +246,7 @@ async (page) => {
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
   assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
-    assert(await page.locator('.mobile-brand-mark').evaluate(el => parseFloat(getComputedStyle(el).width) >= 124), 'Phone brand mark is enlarged');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 139), 'Phone brand artwork remains enlarged in supported viewports');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
     await page.setViewportSize(size);

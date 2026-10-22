@@ -5,6 +5,8 @@
   --ifto-scale: 1;
   --ifto-host-top-inset: max(52px, env(safe-area-inset-top, 0px));
   --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+  --ifto-brand-width: 80px;
+  --ifto-brand-height: 200px;
   --mobile-panel-bg: var(--g6, #f2f2f2);
   position: relative; overflow: hidden !important; overscroll-behavior-x: none;
   min-width: 0;
@@ -50,15 +52,16 @@
   -webkit-overflow-scrolling: touch;
 }
 .ifto-phone .mobile-brand-mark {
-  position: absolute; left: 50%; top: 50%; width: 126px; height: 50px; margin: 0;
-  object-fit: contain; transform: rotate(-90deg); pointer-events: none;
-  translate: -50% -50%;
+  position: absolute; left: 50%; top: 50%; display: block;
+  width: var(--ifto-brand-height); height: var(--ifto-brand-width); margin: 0;
+  object-fit: fill; transform: translate(-50%, -50%) rotate(-90deg); pointer-events: none;
   border: 0; box-shadow: none; background: transparent;
 }
 .theme-dark .ifto-phone .mobile-brand-mark { filter: brightness(0) invert(1); }
 .ifto-phone .mobile-brand-toggle {
   position: absolute; z-index: 31; top: auto; right: 0; bottom: calc(var(--ifto-host-bottom-inset) + 8px);
-  display: block; width: 50px; height: 126px; min-width: 50px; min-height: 126px;
+  display: block; width: var(--ifto-brand-width); height: var(--ifto-brand-height);
+  min-width: var(--ifto-brand-width); min-height: var(--ifto-brand-height);
   padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
   cursor: pointer; touch-action: manipulation;
 }
@@ -70,13 +73,14 @@
 .ifto-phone .section-title-wrap .section-title,
 .ifto-phone .section-title-watermark {
   position: absolute; left: 0; bottom: 0; margin: 0 !important;
-  font-size: clamp(34px, 12.8vw, 48px) !important; line-height: 1 !important;
+  line-height: 1 !important;
   letter-spacing: -1px !important; white-space: nowrap; transform: none !important;
 }
 .ifto-phone .section-title-wrap .section-title {
+  font-size: clamp(48px, 17vw, 64px) !important;
   font-weight: 400; opacity: .22; color: var(--g4); align-self: auto;
 }
-.ifto-phone .section-title-watermark { font-weight: 300; color: var(--g1); }
+.ifto-phone .section-title-watermark { font-size: clamp(29px, 11.4vw, 48px) !important; font-weight: 300; color: var(--g1); }
 .ifto-phone .link-back, .ifto-phone .todo-hint, .ifto-phone .page > .footer { display: none !important; }
 .ifto-phone .tabs {
   display: flex; flex-wrap: nowrap; align-items: center; gap: 8px 14px;
@@ -101,6 +105,11 @@
   background: var(--mobile-panel-bg); border: 0; min-height: 0; height: auto; overflow: visible; border-radius: 0 !important;
 }
 .ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid { min-height: 358px; }
+.ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid.card-grid {
+  height: 358px; max-height: 358px; overflow-x: hidden; overflow-y: auto;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
+.ifto-phone #noteGrid.note-grid { height: 300px; max-height: 300px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .ifto-phone .card, .ifto-phone .card-detail, .ifto-phone .card-sm,
 .ifto-phone .note-card, .ifto-phone .note-card-paper, .ifto-phone .note-add-btn {
   position: relative; width: 100%; max-width: 100%; min-width: 0; margin-inline: auto;
@@ -141,7 +150,7 @@
   overflow: hidden; background-color: var(--mobile-panel-bg); background-size: cover !important;
   background-position: center !important; background-repeat: no-repeat !important;
 }
-.ifto-phone #heroRefreshLabel { width: 112px; height: 52px; font-size: 15px; letter-spacing: 2px; border-radius: var(--ifto-radius, 0px) !important; }
+.ifto-phone #heroRefreshLabel { width: 112px; height: 52px; font-size: 15px; letter-spacing: 2px; border-radius: 0 !important; }
 .ifto-phone #heroRefreshLabel::after { bottom: 8px; }
 .ifto-phone #heroDomainLabel, .ifto-phone #heroImage > div[style*="left:110px"] { display: none !important; }
 .ifto-phone .widget-card {
@@ -197,9 +206,9 @@
 .ifto-phone .project-archive-drop, .ifto-phone .mobile-archive-button { display: none !important; }
 .ifto-phone #project > div:nth-child(2) { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px !important; }
 .ifto-phone .btn-project-new { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; height: auto; padding: 8px 2px; border: 0; border-radius: 0 !important; background: transparent; box-shadow: none; font-size: 16px; white-space: nowrap; }
-.ifto-phone .btn-project-new::before, .ifto-phone .btn-project-new::after { position: absolute; left: 0; right: 0; height: 1px; content: ''; background: var(--g1); }
-.ifto-phone .btn-project-new::before { top: 3px; }
-.ifto-phone .btn-project-new::after { bottom: 3px; }
+.ifto-phone .btn-project-new::before { display: none; }
+.ifto-phone .btn-project-new::after { position: absolute; left: 0; right: 0; bottom: 3px; height: 1px; content: ''; background: var(--g1); opacity: 0; }
+.ifto-phone .btn-project-new:active::after, .ifto-phone .btn-project-new:focus-visible::after { opacity: 1; }
 
 /* Reading tabs replace the desktop sidebar; all cards take two equal columns. */
 .ifto-phone .note-layout { display: flex; flex-direction: column; gap: 8px; }
@@ -229,7 +238,7 @@
 .ifto-phone #area .dt-sum-bar { flex: 1 1 40px; width: auto; min-width: 30px; }
 .ifto-phone #area .dt-view-toggle { margin-left: auto; }
 .ifto-phone #area .dt-view-btn { min-width: 30px; min-height: 34px; }
-.ifto-phone #area .dt-scroll { overflow: visible; padding: 12px; background: var(--mobile-panel-bg); }
+.ifto-phone #area .dt-scroll { height: clamp(220px, calc(100dvh - 380px), 440px); min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px; background: var(--mobile-panel-bg); }
 .ifto-phone #area .dt-groups { justify-content: flex-start; padding: 0; gap: 16px; }
 .ifto-phone #area .dt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 9px; }
 .ifto-phone #area .dt-card { min-width: 0; padding: 10px; border-radius: 0; }
@@ -241,37 +250,36 @@
 .ifto-phone #area .dt-zoom-btn { min-width: 40px; min-height: 40px; }
 
 /* The brand button opens a vertical, floating shortcut panel on demand. */
-.ifto-phone .mobile-dock { position: absolute; z-index: 30; top: auto; bottom: calc(var(--ifto-host-bottom-inset) + 8px); right: 64px; width: min(150px, calc(100% - 78px)); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); overflow-x: hidden; overflow-y: auto; padding: 8px; background: var(--ifto-card-bg); border: 1px solid var(--ifto-divider); box-shadow: var(--ifto-shadow-strong); opacity: 0; visibility: hidden; transform: scale(.12,.12); transform-origin: bottom right; pointer-events: none; transition: opacity 160ms ease, transform 240ms cubic-bezier(.2,.8,.2,1), visibility 0s linear 240ms; }
+.ifto-phone .mobile-dock { position: absolute; z-index: 30; top: auto; bottom: calc(var(--ifto-host-bottom-inset) + 8px); right: calc(var(--ifto-brand-width) + 8px); width: min(150px, calc(100% - var(--ifto-brand-width) - 24px)); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); overflow-x: hidden; overflow-y: auto; padding: 8px; background: var(--ifto-card-bg); border: 1px solid var(--ifto-divider); box-shadow: var(--ifto-shadow-strong); opacity: 0; visibility: hidden; transform: scale(.12,.12); transform-origin: bottom right; pointer-events: none; transition: opacity 160ms ease, transform 240ms cubic-bezier(.2,.8,.2,1), visibility 0s linear 240ms; }
 .ifto-phone .mobile-dock[hidden] { display: none !important; }
 .ifto-phone .mobile-dock.is-open { opacity: 1; visibility: visible; transform: scale(1); pointer-events: auto; transition-delay: 0s; }
-.ifto-phone .mobile-dock .hero-title { display: flex; justify-content: flex-start; gap: 5px; font-size: 11px; font-weight: 400; letter-spacing: 1px; margin: 0 0 7px; line-height: 1.3; white-space: nowrap; }
-.ifto-phone .mobile-dock .hero-title-sub { display: inline; font-size: 8px; letter-spacing: 0; }
+.ifto-phone #home .hero-title, .ifto-phone .mobile-dock .hero-title { display: none !important; }
 .ifto-phone .mobile-dock .shortcuts { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 7px !important; width: 100% !important; margin: 0 !important; }
-.ifto-phone .mobile-dock .btn-s { display: flex; flex-direction: row; justify-content: flex-start; gap: 8px; width: 100% !important; height: 42px !important; min-height: 42px; padding: 0 8px !important; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; opacity: 0; transform: translateY(-4px); transition: opacity 150ms ease, transform 180ms ease; }
+.ifto-phone .mobile-dock .btn-s { position: relative; display: flex; flex-direction: row; justify-content: center; gap: 8px; width: 100% !important; height: 42px !important; min-height: 42px; padding: 0 8px !important; text-align: center; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; opacity: 0; transform: translateY(-4px); transition: opacity 150ms ease, transform 180ms ease; }
 .ifto-phone .mobile-dock.is-open .btn-s { opacity: 1; transform: translateY(0); }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(1) { transition-delay: 45ms; }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(2) { transition-delay: 85ms; }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(3) { transition-delay: 125ms; }
 .ifto-phone .mobile-dock.is-open .btn-s:nth-child(4) { transition-delay: 165ms; }
 .ifto-phone .mobile-dock .s-label { font-size: 15px !important; letter-spacing: 0; }
-.ifto-phone .mobile-dock .s-icon { font-size: 20px !important; font-weight: 300; }
+.ifto-phone .mobile-dock .s-icon { position: absolute; left: 14px; font-size: 20px !important; font-weight: 300; }
 .ifto-phone .card-add, .ifto-phone .card-sm.add-card, .ifto-phone .note-add-btn { gap: 3px !important; }
 .ifto-phone .card-add .ci, .ifto-phone .card-sm.add-card .ci, .ifto-phone .note-add-btn .ci { margin: 0; line-height: 1; }
 .ifto-phone .mobile-dock .btn-s { gap: 4px; }
 .ifto-phone .mobile-note-nav .slide-btn { width: 48px; height: 48px; min-width: 48px; min-height: 48px; font-size: 16px; }
 .ifto-phone .mobile-note-nav .slide-num { min-width: 55px; text-align: center; }
 .ifto-phone .mobile-page-watermark {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; min-height: 90px; margin: 30px auto 0;
-  padding: 10px 0 calc(var(--ifto-host-bottom-inset) + 8px); color: var(--ifto-text-2);
-  text-align: center; font-size: 10px; letter-spacing: .5px; opacity: .65;
+  position: absolute; z-index: 1; left: 0; right: 0; bottom: 2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: 100%; min-height: 0; margin: 0 auto; padding: 0;
+  color: var(--ifto-text-2); pointer-events: none;
+  text-align: center; font-size: 6px; letter-spacing: .25px; opacity: .5;
 }
-.ifto-phone .mobile-page-watermark img { display: block; width: min(200px, 70%); height: 38px; object-fit: contain; filter: brightness(0); opacity: .16; }
+.ifto-phone .mobile-page-watermark img { display: block; width: min(100px, 35%); height: 19px; object-fit: contain; filter: brightness(0); opacity: .16; }
 .ifto-phone.mobile-keyboard .mobile-dock { display: none; }
 .ifto-phone.mobile-keyboard .mobile-brand-toggle { display: none; }
 @media (max-height: 600px) {
-.ifto-phone .mobile-brand-toggle { height: 96px; min-height: 96px; width: 52px; min-width: 52px; }
-  .ifto-phone .mobile-brand-mark { width: 96px; height: 38px; }
+.ifto-phone { --ifto-brand-width: 56px; --ifto-brand-height: 140px; }
   .ifto-phone .mobile-dock { bottom: calc(var(--ifto-host-bottom-inset) + 8px); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); }
 }
 .ifto-phone .mobile-more { position: absolute; top: 0; right: 0; width: 32px; height: 32px; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--ifto-text-2); font-size: 20px; z-index: 2; }
