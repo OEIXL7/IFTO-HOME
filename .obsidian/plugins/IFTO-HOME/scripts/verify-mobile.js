@@ -12,24 +12,39 @@ async (page) => {
   const settle = async () => { await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))); };
   await page.setViewportSize({ width: 375, height: 813 });
   await page.goto('http://127.0.0.1:8765/?phone=1');
-  await page.waitForSelector('.mobile-dock');
+  await page.waitForSelector('.mobile-dock', { state: 'attached' });
   await settle();
   assert(await page.locator('.mobile-panel').count() === 7, 'Seven phone pages');
   assert(await page.locator('.mobile-dock .btn-s').count() === 4, 'Four shared creation buttons');
   assert(await page.locator('#s-collect').count() === 1, 'No duplicated shortcut IDs');
+  assert(await page.locator('.mobile-brand-toggle').count() === 1, 'One fixed brand toggle is shared across pages');
+  assert(await page.locator('.mobile-brand-mark').count() === 1, 'The IFTO mark is rendered once outside the scrolling pages');
+  assert(await page.locator('.mobile-dock').evaluate(el => el.hidden), 'Shortcut panel starts collapsed');
   assert(await page.locator('#inbox [data-tab="organize"]').count() === 0, 'Phone inbox omits the drag-based organize tab');
   const topInset = await page.locator('.header .nav-items').evaluate(el => el.getBoundingClientRect().top);
   assert(topInset >= 52, 'Phone navigation clears the status area');
-  const phoneLogoRight = await page.locator('#home .mobile-brand-mark').evaluate(el => el.getBoundingClientRect().right);
-  assert(Math.abs(phoneLogoRight - 375) < 1, 'Phone brand mark sits flush with the viewport edge');
+  const phoneLogoRight = await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().right);
+  assert(Math.abs(phoneLogoRight - 375) < 1, 'Phone brand toggle sits flush with the viewport edge');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }), 'Rotated IFTO mark remains fully visible at the viewport edge');
   const homeGeometry = await page.evaluate(() => ({
     title: document.querySelector('.hero-brand').getBoundingClientRect().bottom,
     widget: document.querySelector('.widget-card').getBoundingClientRect().top,
-    dock: document.querySelector('.mobile-dock').getBoundingClientRect().bottom,
     viewport: innerHeight
   }));
   assert(homeGeometry.title < homeGeometry.widget, 'Home title above widget');
-  assert(homeGeometry.dock <= homeGeometry.viewport, 'Dock fits available viewport');
+  assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).position === 'absolute'), 'Shortcut panel floats above page content');
+  const logoTop = await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().top);
+  await go('inbox');
+  await page.locator('#inbox').evaluate(el => { el.scrollTop = Math.min(160, el.scrollHeight); });
+  await settle();
+  assert(Math.abs(await page.locator('.mobile-brand-toggle').evaluate(el => el.getBoundingClientRect().top) - logoTop) < 1, 'IFTO logo stays fixed while page content scrolls');
+  await go('home');
+  await page.locator('.mobile-brand-toggle').click();
+  assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight), 'Brand tap opens an on-screen shortcut panel');
+  const shortcutTops = await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.map(el => el.getBoundingClientRect().top));
+  assert(shortcutTops.every((top, i) => i === 0 || top > shortcutTops[i - 1]), 'Shortcut actions stack vertically');
+  await page.keyboard.press('Escape');
+  assert(await page.locator('.mobile-dock').evaluate(el => el.hidden), 'Escape closes the shortcut panel');
   const widgetBefore = await page.evaluate(() => curWidget);
   await page.locator('#widgetNext').click();
   assert(await page.evaluate(before => curWidget !== before && document.querySelector('.ifto-phone').dataset.mobilePage === 'home', widgetBefore), 'Widget arrows do not navigate pages');
@@ -168,7 +183,7 @@ async (page) => {
   var reservedEdgeChangedPluginPage = false;
   try { reservedEdgeChangedPluginPage = await page.evaluate(probe => { var root = document.querySelector('.ifto-phone'); return root && root.dataset.reservedProbe === probe && root.dataset.mobilePage !== 'home'; }, reservedProbe); } catch (_) { /* host navigation replaced the document */ }
   assert(!reservedEdgeChangedPluginPage, 'Reserved edge gesture does not also change the plugin page');
-  await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock');
+  await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock', { state: 'attached' });
   await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage = 'home');
   await swipe(180, 240, 184, 100);
   assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'Vertical gesture does not navigate');
@@ -182,18 +197,24 @@ async (page) => {
   assert(!edgeChangedPluginPage, 'Host edge gesture does not change plugin page');
 
   // New page discards any gesture click suppression before creation checks.
-  await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock');
+  await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock', { state: 'attached' });
+  await page.locator('.mobile-brand-toggle').click();
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
   assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
-  assert(await page.locator('.mobile-brand-mark').first().evaluate(el => parseFloat(getComputedStyle(el).width) >= 90), 'Phone brand mark is enlarged');
+  assert(await page.locator('.mobile-brand-mark').evaluate(el => parseFloat(getComputedStyle(el).width) >= 90), 'Phone brand mark is enlarged');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
     await page.setViewportSize(size);
     for (const id of ['home','inbox','todo','project','area','note','review']) {
       await go(id); await settle();
-      assert(await page.evaluate(id => { const el = document.getElementById(id), dock = document.querySelector('.mobile-dock'); return el.scrollWidth <= el.clientWidth + 1 && dock.getBoundingClientRect().bottom <= innerHeight + 1; }, id), id + ' fits ' + size.width + '×' + size.height);
+      assert(await page.evaluate(id => { const el = document.getElementById(id), brand = document.querySelector('.mobile-brand-toggle').getBoundingClientRect(); return el.scrollWidth <= el.clientWidth + 1 && brand.top >= 0 && brand.bottom <= innerHeight; }, id), id + ' fits ' + size.width + '×' + size.height);
       assert(await page.evaluate(id => Array.from(document.querySelectorAll('#' + id + ' .card-detail,#' + id + ' .card-sm,#' + id + ' .note-card,#' + id + ' .project-card,#' + id + ' .project-file-item')).every(card => card.getBoundingClientRect().width <= card.parentElement.getBoundingClientRect().width + 1), id), id + ' cards stay within their panels');
+    }
+    if (size.height === 375) {
+      await page.locator('.mobile-brand-toggle').click();
+      assert(await page.locator('.mobile-dock').evaluate(el => el.clientHeight > 0 && el.scrollHeight >= el.lastElementChild.getBoundingClientRect().bottom - el.getBoundingClientRect().top), 'Shortcut panel remains usable in short landscape view');
+      await page.locator('.mobile-brand-toggle').click();
     }
   }
   await page.setViewportSize({width:375,height:813});
@@ -201,10 +222,11 @@ async (page) => {
   await go('area'); await page.waitForSelector('.dt-card');
   await page.waitForTimeout(200);
   await page.screenshot({path:'output/playwright/mobile-area-dark.png',scale:'css'});
-  assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).backgroundColor) !== 'rgb(255, 255, 255)', 'Dark theme reaches shared dock');
+  await page.locator('.mobile-brand-toggle').click();
+  assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).backgroundColor) !== 'rgb(255, 255, 255)', 'Dark theme reaches shortcut panel');
 
   await page.goto('http://127.0.0.1:8765/?phone=1');
-  await page.waitForSelector('.mobile-dock');
+  await page.waitForSelector('.mobile-dock', { state: 'attached' });
   await page.evaluate(() => { __fixture.files.clear(); return Promise.all([renderInbox(),renderTodo(),renderNote(),renderReview()]); }); await settle();
   assert(await page.locator('#inboxGrid .mobile-empty').count() === 1 && await page.locator('#todoList .mobile-empty').count() === 1, 'Empty inbox and todo states remain usable');
   await page.evaluate(() => document.querySelector('.ifto-phone').__IFTO_mobileCleanup());

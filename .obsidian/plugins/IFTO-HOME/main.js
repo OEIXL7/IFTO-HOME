@@ -880,11 +880,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   -webkit-overflow-scrolling: touch;
 }
 .ifto-phone .mobile-brand-mark {
-  position: absolute; top: 40px; right: -28px;
-  width: 90px; height: 34px; object-fit: contain; transform: rotate(-90deg);
-  pointer-events: none; border: 0; box-shadow: none; background: transparent;
+  position: absolute; left: calc(50% - 45px); top: calc(50% - 17px); width: 90px; height: 34px; margin: 0;
+  object-fit: contain; transform: rotate(-90deg); pointer-events: none;
+  border: 0; box-shadow: none; background: transparent;
 }
 .theme-dark .ifto-phone .mobile-brand-mark { filter: brightness(0) invert(1); }
+.ifto-phone .mobile-brand-toggle {
+  position: absolute; z-index: 31; top: calc(var(--ifto-host-top-inset) + 66px); right: 0;
+  display: block; width: 38px; height: 92px; min-width: 38px; min-height: 92px;
+  padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  cursor: pointer; touch-action: manipulation;
+}
+.ifto-phone .mobile-brand-toggle:focus-visible { outline: 2px solid var(--g1); outline-offset: -2px; }
 .ifto-phone .section-title-wrap {
   display: grid; height: 98px; align-content: center;
   margin: 0 0 12px !important; padding: 14px 30px 0 0;
@@ -1044,16 +1051,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone #area .dt-zoom-ctrl { position: relative !important; inset: auto !important; transform: none; justify-content: center; padding-top: 10px; }
 .ifto-phone #area .dt-zoom-btn { min-width: 40px; min-height: 40px; }
 
-/* Shared bottom controls stay in layout, reserving their full height. */
-.ifto-phone .mobile-dock { flex: 0 0 auto; position: relative; z-index: 6; padding: 7px 13px var(--ifto-host-bottom-inset); background: var(--ifto-bg, var(--bg)); }
-.ifto-phone .mobile-dock .hero-title { display: flex; justify-content: center; gap: 6px; font-size: 13px; font-weight: 400; letter-spacing: 2px; margin: 0 0 8px; line-height: 1.3; }
-.ifto-phone .mobile-dock .hero-title-sub { display: inline; font-size: 10px; letter-spacing: 0; }
-.ifto-phone .mobile-dock .shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; margin: 0 !important; }
-.ifto-phone .mobile-dock .btn-s { display: flex; flex-direction: row; gap: 6px; width: 100% !important; height: 40px !important; min-height: 40px; padding: 0 4px !important; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; }
+/* The brand button opens a vertical, floating shortcut panel on demand. */
+.ifto-phone .mobile-dock { position: absolute; z-index: 30; top: calc(var(--ifto-host-top-inset) + 162px); right: 10px; width: min(196px, calc(100% - 54px)); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 170px); overflow-y: auto; padding: 10px; background: var(--ifto-card-bg); border: 1px solid var(--ifto-divider); box-shadow: var(--ifto-shadow-strong); }
+.ifto-phone .mobile-dock[hidden] { display: none !important; }
+.ifto-phone .mobile-dock .hero-title { display: flex; justify-content: flex-start; gap: 6px; font-size: 12px; font-weight: 400; letter-spacing: 1.5px; margin: 0 0 8px; line-height: 1.3; }
+.ifto-phone .mobile-dock .hero-title-sub { display: inline; font-size: 9px; letter-spacing: 0; }
+.ifto-phone .mobile-dock .shortcuts { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 7px !important; width: 100% !important; margin: 0 !important; }
+.ifto-phone .mobile-dock .btn-s { display: flex; flex-direction: row; justify-content: flex-start; gap: 9px; width: 100% !important; height: 44px !important; min-height: 44px; padding: 0 10px !important; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; }
 .ifto-phone .mobile-dock .s-label { font-size: 15px !important; letter-spacing: 0; }
 .ifto-phone .mobile-dock .s-icon { font-size: 20px !important; font-weight: 300; }
-.ifto-phone .mobile-signature { margin-top: 3px; color: var(--g4); font-size: 10px; font-weight: 300; text-align: center; line-height: 16px; }
 .ifto-phone.mobile-keyboard .mobile-dock { display: none; }
+.ifto-phone.mobile-keyboard .mobile-brand-toggle { display: none; }
+@media (max-height: 600px) {
+  .ifto-phone .mobile-dock { top: calc(var(--ifto-host-top-inset) + 6px); max-height: calc(100% - var(--ifto-host-top-inset) - var(--ifto-host-bottom-inset) - 16px); }
+}
 .ifto-phone .mobile-more { position: absolute; top: 0; right: 0; width: 32px; height: 32px; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--ifto-text-2); font-size: 20px; z-index: 2; }
 .ifto-phone .mobile-empty { grid-column: 1 / -1; align-self: center; text-align: center; padding: 24px 8px; color: var(--ifto-text-2); font-size: 12px; }
 .ifto-phone #area .dt-pin { opacity: 1; width: 28px; height: 28px; }
@@ -6700,12 +6711,6 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     section.setAttribute('aria-label', id.toUpperCase());
     section.hidden = id !== current;
     rail.appendChild(section);
-    var logo = root.querySelector('.nav-logo img');
-    if (logo) {
-      var brand = logo.cloneNode(true);
-      brand.className = 'mobile-brand-mark'; brand.alt = ''; brand.setAttribute('aria-hidden', 'true');
-      section.appendChild(brand);
-    }
   });
   var header = root.querySelector('.header');
   header.after(rail);
@@ -6718,18 +6723,47 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   // Move existing buttons, preserving their handlers and their unique IDs.
   var dock = document.createElement('footer');
   dock.className = 'mobile-dock';
+  dock.id = 'mobile-shortcuts';
+  dock.hidden = true;
   var shortcutTitle = root.querySelector('.hero-title');
   var shortcuts = root.querySelector('.shortcuts');
   dock.appendChild(shortcutTitle); dock.appendChild(shortcuts);
-  dock.insertAdjacentHTML('beforeend', '<div class="mobile-signature">IFTO \xB7 IFUS</div>');
   shortcuts.querySelectorAll('.btn-s').forEach(function(b) {
     b.setAttribute('aria-label', b.textContent.replace('+', '').trim());
     b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^\u65B0\u5EFA/, '');
   });
-  page.appendChild(dock);
+  root.appendChild(dock);
+
+  var brandToggle = button('', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    setShortcutsOpen(dock.hidden);
+  }, 'mobile-brand-toggle');
+  brandToggle.setAttribute('aria-label', '\u6253\u5F00\u5FEB\u6377\u901A\u9053');
+  brandToggle.setAttribute('aria-expanded', 'false');
+  brandToggle.setAttribute('aria-controls', dock.id);
+  var brandImage = root.querySelector('.nav-logo img');
+  if (brandImage) {
+    var brandMark = brandImage.cloneNode(true);
+    brandMark.className = 'mobile-brand-mark'; brandMark.alt = '';
+    brandMark.setAttribute('aria-hidden', 'true');
+    brandToggle.appendChild(brandMark);
+  }
+  root.appendChild(brandToggle);
+  function setShortcutsOpen(open) {
+    dock.hidden = !open;
+    brandToggle.setAttribute('aria-expanded', String(open));
+    brandToggle.setAttribute('aria-label', open ? '\u5173\u95ED\u5FEB\u6377\u901A\u9053' : '\u6253\u5F00\u5FEB\u6377\u901A\u9053');
+  }
+  on(root, 'click', function(e) {
+    if (!dock.hidden && !dock.contains(e.target) && !brandToggle.contains(e.target)) setShortcutsOpen(false);
+  });
+  on(root, 'keydown', function(e) {
+    if (e.key === 'Escape' && !dock.hidden) { setShortcutsOpen(false); brandToggle.focus(); }
+  });
 
   function navigate(id) {
     if (ids.indexOf(id) < 0 || sheet) return;
+    setShortcutsOpen(false);
     var active = document.activeElement;
     if (active && /^(INPUT|TEXTAREA)$/.test(active.tagName)) active.blur();
     current = id;
@@ -7077,6 +7111,7 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   window.__IFTO_mobileCleanup = function() {
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
+    dock.remove(); brandToggle.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;
   };

@@ -43,12 +43,6 @@
     section.setAttribute('aria-label', id.toUpperCase());
     section.hidden = id !== current;
     rail.appendChild(section);
-    var logo = root.querySelector('.nav-logo img');
-    if (logo) {
-      var brand = logo.cloneNode(true);
-      brand.className = 'mobile-brand-mark'; brand.alt = ''; brand.setAttribute('aria-hidden', 'true');
-      section.appendChild(brand);
-    }
   });
   var header = root.querySelector('.header');
   header.after(rail);
@@ -61,18 +55,47 @@
   // Move existing buttons, preserving their handlers and their unique IDs.
   var dock = document.createElement('footer');
   dock.className = 'mobile-dock';
+  dock.id = 'mobile-shortcuts';
+  dock.hidden = true;
   var shortcutTitle = root.querySelector('.hero-title');
   var shortcuts = root.querySelector('.shortcuts');
   dock.appendChild(shortcutTitle); dock.appendChild(shortcuts);
-  dock.insertAdjacentHTML('beforeend', '<div class="mobile-signature">IFTO · IFUS</div>');
   shortcuts.querySelectorAll('.btn-s').forEach(function(b) {
     b.setAttribute('aria-label', b.textContent.replace('+', '').trim());
     b.querySelector('.s-label').textContent = b.querySelector('.s-label').textContent.replace(/^新建/, '');
   });
-  page.appendChild(dock);
+  root.appendChild(dock);
+
+  var brandToggle = button('', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    setShortcutsOpen(dock.hidden);
+  }, 'mobile-brand-toggle');
+  brandToggle.setAttribute('aria-label', '打开快捷通道');
+  brandToggle.setAttribute('aria-expanded', 'false');
+  brandToggle.setAttribute('aria-controls', dock.id);
+  var brandImage = root.querySelector('.nav-logo img');
+  if (brandImage) {
+    var brandMark = brandImage.cloneNode(true);
+    brandMark.className = 'mobile-brand-mark'; brandMark.alt = '';
+    brandMark.setAttribute('aria-hidden', 'true');
+    brandToggle.appendChild(brandMark);
+  }
+  root.appendChild(brandToggle);
+  function setShortcutsOpen(open) {
+    dock.hidden = !open;
+    brandToggle.setAttribute('aria-expanded', String(open));
+    brandToggle.setAttribute('aria-label', open ? '关闭快捷通道' : '打开快捷通道');
+  }
+  on(root, 'click', function(e) {
+    if (!dock.hidden && !dock.contains(e.target) && !brandToggle.contains(e.target)) setShortcutsOpen(false);
+  });
+  on(root, 'keydown', function(e) {
+    if (e.key === 'Escape' && !dock.hidden) { setShortcutsOpen(false); brandToggle.focus(); }
+  });
 
   function navigate(id) {
     if (ids.indexOf(id) < 0 || sheet) return;
+    setShortcutsOpen(false);
     var active = document.activeElement;
     if (active && /^(INPUT|TEXTAREA)$/.test(active.tagName)) active.blur();
     current = id;
@@ -420,6 +443,7 @@
   window.__IFTO_mobileCleanup = function() {
     controller.abort(); observer.disconnect(); if (frame) cancelAnimationFrame(frame);
     closeSheet(); gesture = null; domainGesture = null; domainMode = false;
+    dock.remove(); brandToggle.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;
   };
