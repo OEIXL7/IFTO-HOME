@@ -297,12 +297,12 @@
 .ifto-phone .mobile-dock .mobile-return-home {
   display: flex; align-items: center; justify-content: center; width: 100%; min-height: 42px;
   margin-top: 7px; padding: 0 8px; border: 1px solid var(--g6); border-radius: 0;
-  background: var(--ifto-card-bg); box-shadow: none; color: var(--g1); font-size: 15px;
+  background: var(--ifto-card-bg); box-shadow: none; color: var(--g1); font-size: 13px;
   letter-spacing: 0; opacity: 0; transform: translateY(-4px);
   transition: opacity 150ms ease, transform 180ms ease;
 }
 .ifto-phone .mobile-dock.is-open .mobile-return-home { opacity: 1; transform: translateY(0); transition-delay: 205ms; }
-.ifto-phone .mobile-dock .s-label { font-size: 15px !important; letter-spacing: 0; }
+.ifto-phone .mobile-dock .s-label { font-size: 13px !important; letter-spacing: 0; }
 .ifto-phone .mobile-dock .s-icon { position: absolute; left: 14px; font-size: 20px !important; font-weight: 300; }
 .ifto-phone .card-add, .ifto-phone .card-sm.add-card, .ifto-phone .note-add-btn { gap: 3px !important; }
 .ifto-phone .card-add .ci, .ifto-phone .card-sm.add-card .ci, .ifto-phone .note-add-btn .ci { margin: 0; line-height: 1; }
