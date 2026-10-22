@@ -1133,7 +1133,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 }
 .ifto-phone .mobile-dock.is-open .mobile-return-home { opacity: 1; transform: translateY(0); transition-delay: 205ms; }
 .ifto-phone .mobile-dock .s-label { grid-column: 3; width: auto; flex: none; font-size: 13px !important; letter-spacing: 0; text-align: left; white-space: nowrap; }
-.ifto-phone .mobile-dock .s-icon { position: static !important; left: auto !important; grid-column: 2; margin: 0 !important; font-size: 20px !important; font-weight: 300; }
+.ifto-phone .mobile-dock .s-icon { position: static !important; left: auto !important; grid-column: 2; margin: 0 !important; font-size: 20px !important; font-weight: 300; transform: translateY(-2px); }
 .ifto-phone .card-add, .ifto-phone .card-sm.add-card, .ifto-phone .note-add-btn { gap: 3px !important; }
 .ifto-phone .card-add .ci, .ifto-phone .card-sm.add-card .ci, .ifto-phone .note-add-btn .ci { margin: 0; line-height: 1; }
 .ifto-phone .mobile-dock .btn-s { gap: 0; }
@@ -7067,6 +7067,13 @@ var __IFTO_MOBILE_JS = `/* Phone presentation only. Business operations continue
     }
   }
   window.__IFTO_mobileNavigate = navigate;
+  function restoreVisiblePhonePage() {
+    if (!root.isConnected || document.visibilityState === 'hidden') return;
+    var panels = rail.querySelectorAll('.mobile-panel');
+    if (panels.length && !Array.from(panels).some(function(panel) { return !panel.hidden; })) navigate('home');
+  }
+  on(document, 'visibilitychange', restoreVisiblePhonePage);
+  on(window, 'pageshow', restoreVisiblePhonePage);
 
   // On phones the home carousel starts with the configured cover image, then
   // continues through the existing widgets. Desktop widget rendering remains
@@ -7599,6 +7606,8 @@ var IFTOView = class extends import_obsidian.ItemView {
     super(leaf);
     __publicField(this, "plugin");
     __publicField(this, "isActive", false);
+    __publicField(this, "activeLeafListenerRegistered", false);
+    __publicField(this, "recoveringBlankView", false);
     this.plugin = plugin;
   }
   getViewType() {
@@ -7622,21 +7631,45 @@ var IFTOView = class extends import_obsidian.ItemView {
     this.containerEl.style.overflow = "auto";
     this.isActive = false;
     window.__IFTO_leafActive = () => !!this.isActive;
-    this.registerEvent(this.app.workspace.on("active-leaf-change", (leaf) => {
-      const act = !!leaf && leaf.view === this;
-      this.isActive = act;
-      if (act && typeof window.__IFTO_restoreFocus === "function") {
-        setTimeout(() => {
-          window.__IFTO_restoreFocus();
-        }, 0);
-        setTimeout(() => {
-          window.__IFTO_restoreFocus();
-        }, 60);
-        setTimeout(() => {
-          window.__IFTO_restoreFocus();
-        }, 200);
-      }
-    }));
+    if (!this.activeLeafListenerRegistered) {
+      this.activeLeafListenerRegistered = true;
+      this.registerEvent(this.app.workspace.on("active-leaf-change", (leaf) => {
+        const act = !!leaf && leaf.view === this;
+        this.isActive = act;
+        if (!act) return;
+        window.setTimeout(() => {
+          if (!this.isActive || !this.containerEl.isConnected) return;
+          const page = this.containerEl.querySelector(".page");
+          if (!page && !this.recoveringBlankView) {
+            this.recoveringBlankView = true;
+            void this.onOpen().finally(() => {
+              this.recoveringBlankView = false;
+              this.isActive = !!this.app.workspace.activeLeaf && this.app.workspace.activeLeaf.view === this;
+            });
+          } else if (import_obsidian.Platform.isPhone && page) {
+            const panels = Array.from(this.containerEl.querySelectorAll(".mobile-panel"));
+            if (panels.length && !panels.some((panel) => !panel.hidden)) {
+              const navigate = window.__IFTO_mobileNavigate;
+              if (typeof navigate === "function") navigate("home");
+              else panels.forEach((panel) => {
+                panel.hidden = panel.id !== "home";
+              });
+            }
+          }
+        }, 120);
+        if (typeof window.__IFTO_restoreFocus === "function") {
+          setTimeout(() => {
+            window.__IFTO_restoreFocus();
+          }, 0);
+          setTimeout(() => {
+            window.__IFTO_restoreFocus();
+          }, 60);
+          setTimeout(() => {
+            window.__IFTO_restoreFocus();
+          }, 200);
+        }
+      }));
+    }
     try {
       window.__IFTO_SETTINGS = {
         heroImageUrl: this.plugin.settings.heroImageUrl,
@@ -8822,6 +8855,7 @@ var IFTOView = class extends import_obsidian.ItemView {
           }, 600);
         }
       }));
+      this.isActive = !!this.app.workspace.activeLeaf && this.app.workspace.activeLeaf.view === this;
     } catch (e) {
       console.error("IFTO: Failed to load home.html", e);
       this.containerEl.innerHTML = `
@@ -8986,6 +9020,8 @@ var IFTOPlugin = class extends import_obsidian.Plugin {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(IFTO_VIEW_TYPE);
     if (existing.length > 0) {
+      const view = existing[0].view;
+      if (view && !view.containerEl.querySelector(".page")) await view.onOpen();
       workspace.revealLeaf(existing[0]);
       return;
     }

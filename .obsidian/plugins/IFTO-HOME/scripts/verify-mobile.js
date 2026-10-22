@@ -91,14 +91,22 @@ async (page) => {
   await go('home');
   await page.locator('.mobile-brand-toggle').click();
   assert(await page.locator('.mobile-dock').evaluate(el => !el.hidden && el.getBoundingClientRect().bottom <= innerHeight - 80 && el.getBoundingClientRect().width <= 155 && !el.querySelector('.hero-title')), 'Brand tap opens a title-free shortcut panel beside the logo');
-  assert(await page.getByRole('button', {name:'返回首页', exact:true}).count() === 1, 'Shortcut panel includes a return-home button');
+  assert(await page.getByRole('button', {name:'HOME返回首页', exact:true}).count() === 1, 'Shortcut panel includes a return-home button');
   assert(await page.locator('.mobile-dock').evaluate(el => getComputedStyle(el).transitionDuration.split(',').some(duration => parseFloat(duration) >= .2)), 'Shortcut panel expands with a transition');
   const shortcutTops = await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.map(el => el.getBoundingClientRect().top));
   assert(shortcutTops.every((top, i) => i === 0 || top > shortcutTops[i - 1]), 'Shortcut actions stack vertically');
-  await page.getByRole('button', {name:'返回首页', exact:true}).click(); await settle();
+  await page.getByRole('button', {name:'HOME返回首页', exact:true}).click(); await settle();
   assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home' && document.querySelector('.mobile-dock').getAttribute('aria-hidden') === 'true'), 'Return-home shortcut navigates to HOME and closes the panel');
+  await page.evaluate(() => { document.querySelectorAll('.mobile-panel').forEach(panel => { panel.hidden = true; }); document.dispatchEvent(new Event('visibilitychange')); }); await settle();
+  assert(await page.locator('#home.mobile-panel').evaluate(el => !el.hidden && document.querySelectorAll('.mobile-panel:not([hidden])').length === 1), 'Returning to a visible phone tab restores HOME if the WebView left every page hidden');
   await page.locator('.mobile-brand-toggle').click();
-  assert(await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.every(el => getComputedStyle(el).justifyContent === 'center' && getComputedStyle(el.querySelector('.s-label')).textAlign === 'center')), 'Shortcut labels are centered inside all four buttons');
+  assert(await page.locator('.mobile-dock .btn-s').evaluateAll(els => els.every(el => {
+    const button = el.getBoundingClientRect(), icon = el.querySelector('.s-icon').getBoundingClientRect(), label = el.querySelector('.s-label').getBoundingClientRect();
+    return Math.abs((icon.left + label.right) / 2 - (button.left + button.right) / 2) <= 1 && Math.abs((icon.top + icon.bottom) / 2 - (label.top + label.bottom) / 2) <= 3;
+  })), 'Shortcut plus and label stay joined and align as a centered group');
+  for (const [id, label] of [['s-collect','INBOX收集'],['s-todo','TODO待办'],['s-task','PROJECT任务'],['s-note','NOTE笔记']]) {
+    assert(await page.locator('#' + id + ' .s-label').textContent() === label, 'Shortcut label is ' + label);
+  }
   await page.keyboard.press('Escape');
   assert(await page.locator('.mobile-dock').evaluate(el => el.getAttribute('aria-hidden') === 'true'), 'Escape closes the shortcut panel');
   const widgetBefore = await page.evaluate(() => curWidget);
@@ -297,7 +305,7 @@ async (page) => {
   await page.locator('.mobile-brand-toggle').click();
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
-  assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
+  assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) === 13), 'Phone shortcut labels use the requested smaller type size');
   assert(await page.locator('.mobile-brand-mark').evaluate(el => el.getBoundingClientRect().height >= 90), 'Phone brand artwork remains visible in short viewports');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {

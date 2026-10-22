@@ -194,6 +194,13 @@
     }
   }
   window.__IFTO_mobileNavigate = navigate;
+  function restoreVisiblePhonePage() {
+    if (!root.isConnected || document.visibilityState === 'hidden') return;
+    var panels = rail.querySelectorAll('.mobile-panel');
+    if (panels.length && !Array.from(panels).some(function(panel) { return !panel.hidden; })) navigate('home');
+  }
+  on(document, 'visibilitychange', restoreVisiblePhonePage);
+  on(window, 'pageshow', restoreVisiblePhonePage);
 
   // On phones the home carousel starts with the configured cover image, then
   // continues through the existing widgets. Desktop widget rendering remains
