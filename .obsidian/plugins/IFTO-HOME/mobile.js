@@ -117,6 +117,8 @@
   brandToggle.setAttribute('aria-label', '打开快捷通道');
   brandToggle.setAttribute('aria-expanded', 'false');
   brandToggle.setAttribute('aria-controls', dock.id);
+  var brandLayer = document.createElement('div');
+  brandLayer.className = 'mobile-brand-layer ifto-phone';
   var brandImage = root.querySelector('.nav-logo img');
   if (brandImage) {
     var brandMark = brandImage.cloneNode(true);
@@ -124,7 +126,8 @@
     brandMark.setAttribute('aria-hidden', 'true');
     brandToggle.appendChild(brandMark);
   }
-  root.appendChild(brandToggle);
+  brandLayer.appendChild(brandToggle);
+  document.body.appendChild(brandLayer);
   // The visible artwork should meet the phone viewport edge; anchoring to an
   // Obsidian pane's content box leaves a noticeable gap on mobile layouts.
   function setShortcutsOpen(open) {
@@ -598,6 +601,7 @@
     var height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     if (!editing) viewportBase = Math.max(viewportBase, height);
     root.classList.toggle('mobile-keyboard', editing && viewportBase - height > 120);
+    brandToggle.hidden = root.classList.contains('mobile-keyboard');
   }
   on(root, 'focusin', keyboardLayout); on(root, 'focusout', function() { requestAnimationFrame(keyboardLayout); });
   if (window.visualViewport) on(window.visualViewport, 'resize', keyboardLayout);
@@ -622,7 +626,7 @@
       if (heroImageNext && heroImageNext.parentNode === heroImageParent) heroImageParent.insertBefore(heroImage, heroImageNext);
       else heroImageParent.appendChild(heroImage);
     }
-    dock.remove(); brandToggle.remove();
+    dock.remove(); brandLayer.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;
   };

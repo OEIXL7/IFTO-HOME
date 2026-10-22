@@ -891,13 +891,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 }
 .theme-dark .ifto-phone .mobile-brand-mark { filter: brightness(0) invert(1); }
 .ifto-phone .mobile-brand-toggle {
-  position: absolute; z-index: 31; top: auto; right: 0; bottom: calc(var(--ifto-host-bottom-inset) + 8px);
+  position: fixed; z-index: 31; top: auto; right: 0; left: auto; bottom: calc(var(--ifto-host-bottom-inset) + 8px);
   display: block; width: var(--ifto-brand-width); height: var(--ifto-brand-height);
   min-width: var(--ifto-brand-width); min-height: var(--ifto-brand-height);
   padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
   cursor: pointer; touch-action: manipulation;
 }
 .ifto-phone .mobile-brand-toggle:focus-visible { outline: 2px solid var(--g1); outline-offset: -2px; }
+.mobile-brand-layer.ifto-phone {
+  --ifto-host-bottom-inset: max(88px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+  --ifto-brand-width: 84px;
+  --ifto-brand-height: 225px;
+  position: fixed !important; z-index: 1000; inset: 0; overflow: visible !important;
+  pointer-events: none; contain: none !important; transform: none !important;
+}
+.mobile-brand-layer.ifto-phone .mobile-brand-toggle { position: absolute !important; top: auto; right: 0 !important; left: auto !important; pointer-events: auto; }
+.mobile-brand-layer.ifto-phone .mobile-brand-toggle[hidden] { display: none !important; }
 .ifto-phone .section-title-wrap {
   position: relative; display: block; height: 98px; box-sizing: border-box;
   margin: 0 0 12px !important; padding: 0 30px 0 0;
@@ -941,7 +950,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   height: 358px; max-height: 358px; overflow-x: hidden; overflow-y: auto;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
-.ifto-phone #noteGrid.note-grid { height: 300px; max-height: 300px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.ifto-phone #noteGrid.note-grid { height: clamp(360px, calc(100dvh - 300px), 520px); max-height: clamp(360px, calc(100dvh - 300px), 520px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .ifto-phone .card, .ifto-phone .card-detail, .ifto-phone .card-sm,
 .ifto-phone .note-card, .ifto-phone .note-card-paper, .ifto-phone .note-add-btn {
   position: relative; width: 100%; max-width: 100%; min-width: 0; margin-inline: auto;
@@ -958,7 +967,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   overflow: hidden; font-size: 12px; line-height: 1.4; font-weight: 400; padding-right: 16px; white-space: normal;
 }
 .ifto-phone .card-date { font-size: 10px; letter-spacing: 0; line-height: 1.4; }
-.ifto-phone #inboxGrid .card-detail .card-tags { display: flex; font-size: 10px; line-height: 1.25; padding-top: 4px; }
+.ifto-phone #inboxGrid .card-detail .card-tags { display: flex; flex-wrap: nowrap; max-width: 100%; overflow: hidden; white-space: nowrap; font-size: 10px; line-height: 1.25; padding-top: 4px; }
 .ifto-phone #inboxGrid .card-detail .card-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .ifto-phone .slide-nav { justify-content: center; gap: 18px; margin: 16px 0 0; padding: 0; }
 .ifto-phone .slide-btn { width: 48px; height: 48px; border-radius: 0 !important; box-shadow: none; background: var(--ifto-card-bg); }
@@ -1591,7 +1600,7 @@ async function renderInboxCollect(grid) {
   var itemsPerRow = window.__IFTO_MOBILE_ACTIVE ? 2 : Math.max(1, Math.floor((gridWidth + 10) / 210)); // phones always use two columns, including hidden panels
   var rowsPerPage = 4;
   var itemsPerPage = itemsPerRow * rowsPerPage;
-  var page1Slots = itemsPerPage - (window.__IFTO_MOBILE_ACTIVE ? 0 : 1); // phone creation lives in the shared dock
+  var page1Slots = itemsPerPage - 1; // keep the new-collection card in the first slot on every layout
   var otherSlots = itemsPerPage;
   var totalPages = 1;
   if(totalFiles > page1Slots) totalPages = 1 + Math.ceil((totalFiles - page1Slots) / otherSlots);
@@ -1603,7 +1612,7 @@ async function renderInboxCollect(grid) {
   var pf = allDetails.slice(start, start + count);
 
   var html = '';
-  if(inboxPage === 1 && !window.__IFTO_MOBILE_ACTIVE) {
+  if(inboxPage === 1) {
     html += '<div class="card card-add" id="collect-add-btn"><span class="ci">+</span><span class="cl">\u65B0\u5EFA\u6536\u96C6</span></div>';
   }
   for(var i=0;i<pf.length;i++) {
@@ -6923,6 +6932,8 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   brandToggle.setAttribute('aria-label', '\u6253\u5F00\u5FEB\u6377\u901A\u9053');
   brandToggle.setAttribute('aria-expanded', 'false');
   brandToggle.setAttribute('aria-controls', dock.id);
+  var brandLayer = document.createElement('div');
+  brandLayer.className = 'mobile-brand-layer ifto-phone';
   var brandImage = root.querySelector('.nav-logo img');
   if (brandImage) {
     var brandMark = brandImage.cloneNode(true);
@@ -6930,7 +6941,8 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     brandMark.setAttribute('aria-hidden', 'true');
     brandToggle.appendChild(brandMark);
   }
-  root.appendChild(brandToggle);
+  brandLayer.appendChild(brandToggle);
+  document.body.appendChild(brandLayer);
   // The visible artwork should meet the phone viewport edge; anchoring to an
   // Obsidian pane's content box leaves a noticeable gap on mobile layouts.
   function setShortcutsOpen(open) {
@@ -7404,6 +7416,7 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     var height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     if (!editing) viewportBase = Math.max(viewportBase, height);
     root.classList.toggle('mobile-keyboard', editing && viewportBase - height > 120);
+    brandToggle.hidden = root.classList.contains('mobile-keyboard');
   }
   on(root, 'focusin', keyboardLayout); on(root, 'focusout', function() { requestAnimationFrame(keyboardLayout); });
   if (window.visualViewport) on(window.visualViewport, 'resize', keyboardLayout);
@@ -7428,7 +7441,7 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
       if (heroImageNext && heroImageNext.parentNode === heroImageParent) heroImageParent.insertBefore(heroImage, heroImageNext);
       else heroImageParent.appendChild(heroImage);
     }
-    dock.remove(); brandToggle.remove();
+    dock.remove(); brandLayer.remove();
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;
   };

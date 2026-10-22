@@ -199,7 +199,7 @@ async function renderInboxCollect(grid) {
   var itemsPerRow = window.__IFTO_MOBILE_ACTIVE ? 2 : Math.max(1, Math.floor((gridWidth + 10) / 210)); // phones always use two columns, including hidden panels
   var rowsPerPage = 4;
   var itemsPerPage = itemsPerRow * rowsPerPage;
-  var page1Slots = itemsPerPage - (window.__IFTO_MOBILE_ACTIVE ? 0 : 1); // phone creation lives in the shared dock
+  var page1Slots = itemsPerPage - 1; // keep the new-collection card in the first slot on every layout
   var otherSlots = itemsPerPage;
   var totalPages = 1;
   if(totalFiles > page1Slots) totalPages = 1 + Math.ceil((totalFiles - page1Slots) / otherSlots);
@@ -211,7 +211,7 @@ async function renderInboxCollect(grid) {
   var pf = allDetails.slice(start, start + count);
 
   var html = '';
-  if(inboxPage === 1 && !window.__IFTO_MOBILE_ACTIVE) {
+  if(inboxPage === 1) {
     html += '<div class="card card-add" id="collect-add-btn"><span class="ci">+</span><span class="cl">新建收集</span></div>';
   }
   for(var i=0;i<pf.length;i++) {

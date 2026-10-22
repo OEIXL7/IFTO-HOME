@@ -28,6 +28,7 @@ async (page) => {
   assert(topInset >= 70, 'Phone navigation sits lower beneath the status area');
   const phoneLogo = await page.locator('.mobile-brand-toggle').evaluate(el => { const r = el.getBoundingClientRect(); return {right:r.right,bottom:r.bottom,top:r.top,width:parseFloat(getComputedStyle(el).width),viewport:innerHeight}; });
   assert(Math.abs(phoneLogo.right - 375) < 1, 'Phone brand toggle sits flush with the phone viewport edge');
+  assert(await page.locator('.mobile-brand-layer').evaluate(el => { const r=el.getBoundingClientRect(); return getComputedStyle(el).position === 'fixed' && Math.abs(r.left) < 1 && Math.abs(r.right-innerWidth) < 1; }), 'Phone brand layer spans the WebView viewport outside the pane content box');
   assert(phoneLogo.bottom < phoneLogo.viewport - 80 && phoneLogo.top > phoneLogo.viewport / 2, 'Phone brand toggle sits at the bottom-right above Obsidian controls');
   assert(await page.locator('.mobile-brand-mark').evaluate(el => { const r = el.getBoundingClientRect(), b = el.parentElement.getBoundingClientRect(); return Math.abs(r.right-innerWidth)<1 && Math.abs(r.width-b.width)<1 && Math.abs(r.height-b.height)<1 && Math.abs(r.width-84)<1 && Math.abs(r.height-225)<1; }), 'IFTO artwork itself is 1.5x larger, flush with the phone edge, and matches its tap target');
   assert(await page.locator('.nav-item').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 18), 'Phone navigation type matches habit heading size');
@@ -106,9 +107,13 @@ async (page) => {
     await go(id); await settle();
     assert(await page.locator('.mobile-panel:not([hidden])').count() === 1, 'Only ' + id + ' is visible');
     assert(await page.evaluate(id => { const el = document.getElementById(id); return el.scrollWidth <= el.clientWidth + 1; }, id), id + ' has no horizontal overflow');
-    if (id === 'inbox') assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0), 'Collect cards display their tags');
+    if (id === 'inbox') {
+      assert(await page.locator('#collect-add-btn').count() === 1 && await page.locator('#inboxGrid').locator(':scope > *').first().getAttribute('id') === 'collect-add-btn', 'Inbox starts with the desktop-style new collection card');
+      assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0), 'Collect cards display their tags');
+      assert(await page.locator('#inboxGrid .card-detail .card-tags').first().evaluate(el => getComputedStyle(el).flexWrap === 'nowrap' && getComputedStyle(el).overflowX === 'hidden'), 'Collect card tags stay on one clipped line within the card');
+    }
     if (id === 'inbox' || id === 'review') assert(await page.locator('#' + (id === 'inbox' ? 'inboxGrid' : 'reviewGrid')).evaluate(el => el.clientHeight === 358 && el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), id + ' cards scroll inside the fixed display area');
-    if (id === 'note') assert(await page.locator('#noteGrid').evaluate(el => el.clientHeight === 300 && getComputedStyle(el).overflowY === 'auto'), 'Reading cards stay in their fixed scroll area');
+    if (id === 'note') assert(await page.locator('#noteGrid').evaluate(el => parseFloat(getComputedStyle(el).height) > parseFloat(getComputedStyle(document.querySelector('#area .dt-scroll')).height) && getComputedStyle(el).overflowY === 'auto'), 'Reading area is taller than AREA and scrolls overflow internally');
     if (id === 'area') assert(await page.locator('#area .dt-scroll').evaluate(el => el.clientHeight >= 220 && el.clientHeight <= 440 && getComputedStyle(el).overflowY === 'auto'), 'AREA cards scroll inside their fixed display area');
     if (id === 'todo') assert(await page.locator('#todoList').evaluate(el => Math.abs(el.getBoundingClientRect().height - 158) < 1 && getComputedStyle(el).overflowY === 'auto'), 'Today todo shows about three rows and scrolls overflow inside its fixed list');
     if (id === 'project') assert(await page.locator('.project-col').evaluateAll(els => els.length > 0 && els.every(el => getComputedStyle(el).overflowY === 'visible' && el.scrollHeight <= el.clientHeight + 1)), 'Project statuses expand fully and leave scrolling to the page');
@@ -119,7 +124,7 @@ async (page) => {
   await go('project');
   assert(await page.locator('#project .project-col-title').first().evaluate(el => parseFloat(getComputedStyle(el).paddingTop) >= 8 && el.getBoundingClientRect().height >= 34), 'Project status headings have more space above them');
   await go('inbox');
-  assert(await page.locator('#inboxGrid > .card-detail').count() === 8, 'Inbox has eight real cards per phone page');
+  assert(await page.locator('#inboxGrid > .card-detail').count() === 7, 'Inbox reserves the first phone-page slot for the new collection card');
   await page.locator('#inbox .slide-btn').nth(1).click();
   await page.waitForFunction(() => inboxPage === 2 && document.querySelector('#inbox .slide-num').textContent.startsWith('02'));
   await go('todo'); await go('inbox');
@@ -300,7 +305,7 @@ async (page) => {
   await page.evaluate(() => { __fixture.files.clear(); return Promise.all([renderInbox(),renderTodo(),renderNote(),renderReview()]); }); await settle();
   assert(await page.locator('#inboxGrid .mobile-empty').count() === 1 && await page.locator('#todoList .mobile-empty').count() === 1, 'Empty inbox and todo states remain usable');
   await page.evaluate(() => document.querySelector('.ifto-phone').__IFTO_mobileCleanup());
-  assert(await page.evaluate(() => !window.__IFTO_MOBILE_ACTIVE && !window.__IFTO_mobileNavigate && !window.__IFTO_mobileCleanup), 'Phone controller cleans up on view close');
+  assert(await page.evaluate(() => !window.__IFTO_MOBILE_ACTIVE && !window.__IFTO_mobileNavigate && !window.__IFTO_mobileCleanup && !document.querySelector('.mobile-brand-layer')), 'Phone controller removes its viewport overlay on view close');
 
   // Compare baseline and changed desktop element geometry at wide and narrow sizes.
   for (const width of [1440, 375]) {
