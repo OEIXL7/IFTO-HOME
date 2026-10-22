@@ -13,9 +13,9 @@ const [html, js, css, mobile, source, ...covers] = await Promise.all([
 const htmlBundle = html.replace('</head>', '<style id="ifto-mobile-styles">\n' + css + '\n</style>\n</head>');
 const coverData = covers.map(buffer => 'data:image/jpeg;base64,' + buffer.toString('base64'));
 const coverBootstrap = 'window.__IFTO_DEFAULT_HERO_IMAGES=' + JSON.stringify(coverData) + ';\n';
-const jsBundle = coverBootstrap + js + '\n;\n' + mobile;
+const jsBundle = coverBootstrap + js;
 const literal = value => JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-const inline = '/* __IFTO_INLINE_START__ */\nconst __IFTO_HOME_HTML = ' + literal(htmlBundle) + ';\nconst __IFTO_HOME_JS = ' + literal(jsBundle) + ';\n/* __IFTO_INLINE_END__ */';
+const inline = '/* __IFTO_INLINE_START__ */\nconst __IFTO_HOME_HTML = ' + literal(htmlBundle) + ';\nconst __IFTO_HOME_JS = ' + literal(jsBundle) + ';\nconst __IFTO_MOBILE_JS = ' + literal(mobile) + ';\n/* __IFTO_INLINE_END__ */';
 const marker = /\/\* __IFTO_INLINE_START__ \*\/[\s\S]*?\/\* __IFTO_INLINE_END__ \*\//;
 if (!marker.test(source)) throw new Error('Missing inline resource markers in main.ts');
 const updated = source.replace(marker, () => inline);

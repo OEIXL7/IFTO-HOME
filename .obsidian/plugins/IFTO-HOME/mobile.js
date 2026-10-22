@@ -1,6 +1,10 @@
 /* Phone presentation only. Business operations continue to use the host bridges. */
 (function installPhoneHome() {
-  var root = document.querySelector('.ifto-container.ifto-phone');
+  // Bind to the ItemView that is currently opening. A global first-match
+  // selector can attach the phone controller to a hidden/stale leaf when
+  // Obsidian keeps more than one IFTO view alive.
+  var root = window.__IFTO_ACTIVE_CONTAINER;
+  if (!root || !root.classList.contains('ifto-phone')) root = document.querySelector('.ifto-container.ifto-phone');
   if (!root) return;
   if (window.__IFTO_mobileCleanup) window.__IFTO_mobileCleanup();
   window.__IFTO_MOBILE_ACTIVE = true;
@@ -627,6 +631,7 @@
       else heroImageParent.appendChild(heroImage);
     }
     dock.remove(); brandLayer.remove();
+    if (window.__IFTO_ACTIVE_CONTAINER === root) window.__IFTO_ACTIVE_CONTAINER = null;
     window.__IFTO_mobileNavigate = null; window.__IFTO_MOBILE_ACTIVE = false;
     window.__IFTO_mobileCleanup = null;
   };

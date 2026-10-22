@@ -1,5 +1,5 @@
 // inboxCards is also used by reviewGrid section below
-window.__IFTO_MOBILE_ACTIVE = !!document.querySelector('.ifto-container.ifto-phone');
+window.__IFTO_MOBILE_ACTIVE = !!(window.__IFTO_ACTIVE_CONTAINER && window.__IFTO_ACTIVE_CONTAINER.classList.contains('ifto-phone')) || !!document.querySelector('.ifto-container.ifto-phone');
 var inboxCards = [
   {add:true,title:'新建收集'},
   ...Array(9).fill().map(()=>({title:'收集文件',date:'date：YYYYMMDD'}))

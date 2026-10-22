@@ -26,11 +26,13 @@ const server = http.createServer(async (req, res) => {
       let html = await readView('home.html');
       const css = baseline ? '' : await read('mobile.css');
       const fixture = await read('scripts/preview-fixture.js');
-      const js = await readView('home.js') + (baseline ? '' : '\n;' + await read('mobile.js'));
+      const js = await readView('home.js');
+      const mobile = baseline ? '' : await read('mobile.js');
       html = html.replace(/https:\/\/picsum.photos\/1200\/800/g, '');
       html = html.replace('</head>', '<link rel="stylesheet" href="/styles.css' + (baseline ? '?baseline=1' : '') + '"><style>' + css + '\nbody{margin:0;height:100vh}.ifto-container{height:100%;position:relative}</style></head>');
       html = html.replace('<body>', '<body class="theme-' + (url.searchParams.get('theme') === 'dark' ? 'dark' : 'light') + '"><div class="ifto-container' + (url.searchParams.has('phone') ? ' ifto-phone' : '') + '">');
-      html = html.replace('</body>', '</div><script>' + fixture + '</script><script>' + js.replace(/<\/script/gi, '<\\/script') + '</script></body>');
+      const mobileRoot = url.searchParams.has('phone') ? 'window.__IFTO_ACTIVE_CONTAINER=document.querySelector(".ifto-container.ifto-phone");' : '';
+      html = html.replace('</body>', '</div><script>' + fixture + '</script><script>' + mobileRoot + js.replace(/<\/script/gi, '<\\/script') + '</script>' + (mobile ? '<script>' + mobile.replace(/<\/script/gi, '<\\/script') + '</script>' : '') + '</body>');
       res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); return;
     }
     if (url.pathname === '/styles.css') { res.setHeader('Content-Type', 'text/css'); res.end(await readView('styles.css')); return; }
