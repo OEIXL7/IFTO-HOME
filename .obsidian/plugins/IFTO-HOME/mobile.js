@@ -13,6 +13,8 @@
   var notePages = { reading: 1, read: 1, paper: 1 };
   var sheet = null, sheetTrigger = null;
   var viewportBase = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var organizeTab = root.querySelector('#inbox .tab[data-tab="organize"]');
+  if (organizeTab) organizeTab.remove();
   function on(el, event, handler, options) {
     el.addEventListener(event, handler, Object.assign({}, options, { signal: signal }));
   }
@@ -102,14 +104,16 @@
     }
   }, { capture: true });
 
-  // Axis locking lets vertical scrolling and host edge gestures take precedence.
+  // Reserve broad edge zones for Obsidian's sidebar gestures. Inside the
+  // center lane, require a deliberate horizontal swipe before changing pages.
   var excluded = 'input,textarea,select,button,a,[contenteditable="true"],.tabs,.note-sidebar,.slide-nav,.hero-nav-row,.mobile-note-nav,.dt-visual,.dt-zoom-ctrl,.mobile-sheet-overlay';
   on(rail, 'touchstart', function(e) {
     gesture = null;
     if (sheet || e.touches.length !== 1 || e.target.closest(excluded)) return;
     if (document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
     var t = e.touches[0], bounds = root.getBoundingClientRect();
-    if (t.clientX - bounds.left < 24 || bounds.right - t.clientX < 24) return;
+    var edgeReserve = Math.min(64, Math.max(48, bounds.width * 0.16));
+    if (t.clientX - bounds.left < edgeReserve || bounds.right - t.clientX < edgeReserve) return;
     gesture = { x: t.clientX, y: t.clientY, lastX: t.clientX, start: Date.now(), axis: '' };
   }, { passive: true });
   on(rail, 'touchmove', function(e) {
@@ -118,7 +122,10 @@
     var t = e.touches[0], dx = t.clientX - gesture.x, dy = t.clientY - gesture.y;
     gesture.lastX = t.clientX;
     if (!gesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) gesture.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
-    if (gesture.axis === 'x' && e.cancelable) e.preventDefault();
+    if (gesture.axis === 'x') {
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+    }
   }, { passive: false });
   on(rail, 'touchend', function(e) {
     if (!gesture) return;
@@ -126,7 +133,7 @@
     var t = e.changedTouches[0];
     var dx = t ? t.clientX - g.x : g.lastX - g.x;
     var dy = t ? t.clientY - g.y : 0;
-    if (g.axis !== 'y' && Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - g.start < 1000) {
+    if (g.axis === 'x' && Math.abs(dx) >= 80 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - g.start < 900) {
       suppressClickUntil = Date.now() + 350;
       var next = ids.indexOf(current) + (dx < 0 ? 1 : -1);
       if (next >= 0 && next < ids.length) navigate(ids[next]);
@@ -299,10 +306,21 @@
         if (target && target.ondrop) target.ondrop(dropEvent(path, source));
       } });
     } else if (!isFolder && card.closest('#inbox,#todo')) {
-      [ ['收集', getInboxFolder()], ['今日待办', TODO_FOLDER], ['活动清单', ACTIVITY_FOLDER], ['快速学习', getQuickLearnFolder()] ].forEach(function(dest) {
+      var inboxCard = !!card.closest('#inbox');
+      var destinations = inboxCard ? [
+        ['资源文件目录', getResourceRoot()],
+        ['项目管理目录', getProjectBase()],
+        ['快速学习', getQuickLearnFolder()],
+        ['今日待办', TODO_FOLDER],
+        ['活动清单', ACTIVITY_FOLDER]
+      ] : [
+        ['收集', getInboxFolder()], ['今日待办', TODO_FOLDER],
+        ['活动清单', ACTIVITY_FOLDER], ['快速学习', getQuickLearnFolder()]
+      ];
+      destinations.forEach(function(dest) {
         if (path.substring(0, path.lastIndexOf('/')) !== dest[1]) items.push({ label: '移至' + dest[0], action: function() { return move(path, dest[1]); } });
       });
-      items.push({ label: '选择目标文件夹…', action: function() {
+      if (!inboxCard) items.push({ label: '选择目标文件夹…', action: function() {
         openSheet('选择分类位置', [getResourceRoot(), getProjectBase(), getNoteFolder()].map(function(folder) {
           return { label: folder, action: function() { pickFolder(path, folder); } };
         }));

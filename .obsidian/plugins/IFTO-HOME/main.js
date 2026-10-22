@@ -880,8 +880,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
   -webkit-overflow-scrolling: touch;
 }
 .ifto-phone .mobile-brand-mark {
-  position: absolute; top: 40px; right: -20px;
-  width: 65px; height: 24px; object-fit: contain; transform: rotate(-90deg);
+  position: absolute; top: 40px; right: -28px;
+  width: 90px; height: 34px; object-fit: contain; transform: rotate(-90deg);
   pointer-events: none; border: 0; box-shadow: none; background: transparent;
 }
 .theme-dark .ifto-phone .mobile-brand-mark { filter: brightness(0) invert(1); }
@@ -911,18 +911,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 }
 .ifto-phone .tab.active::before { top: 2px; }
 .ifto-phone .tab.active::after { bottom: 2px; }
+.ifto-phone #inbox .tab[data-tab="organize"] { display: none !important; }
 .ifto-phone .sort-toggle { font-size: 10px; letter-spacing: 0; min-height: 32px; display: inline-flex; align-items: center; white-space: nowrap; }
 .ifto-phone #inbox > .tabs > div { margin-left: auto !important; gap: 0 !important; }
 .ifto-phone .card-grid, .ifto-phone .note-grid, .ifto-phone .activity-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-auto-rows: minmax(80px, auto); align-content: start;
-  gap: 7px 9px; padding: 10px; min-width: 0; width: 100%;
+  justify-items: stretch; gap: 7px 9px; padding: 10px; min-width: 0; width: 100%;
   background: var(--mobile-panel-bg); border: 0; min-height: 0; height: auto; overflow: visible; border-radius: 0 !important;
 }
 .ifto-phone #inboxGrid.card-grid, .ifto-phone #reviewGrid { min-height: 358px; }
 .ifto-phone .card, .ifto-phone .card-detail, .ifto-phone .card-sm,
 .ifto-phone .note-card, .ifto-phone .note-card-paper, .ifto-phone .note-add-btn {
-  position: relative; width: 100%; max-width: none; min-width: 0;
+  position: relative; width: 100%; max-width: 100%; min-width: 0; margin-inline: auto;
   min-height: 80px; height: auto; padding: 12px 10px; border-radius: 0 !important;
   background: var(--ifto-card-bg); border: 0; box-shadow: 1px 1px 2px #00000014;
   overflow-wrap: anywhere; text-align: left;
@@ -961,9 +962,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 /* TODO uses a vertical list followed by an activity grid. */
 .ifto-phone .todo-layout { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 .ifto-phone .todo-panel { width: 100%; min-width: 0; flex: 0 0 auto; padding: 0; }
-.ifto-phone .todo-list { display: flex; flex-direction: column; gap: 5px; background: var(--mobile-panel-bg); padding: 10px; min-height: 160px; height: auto; max-height: none; overflow: visible; border-radius: 0 !important; }
-.ifto-phone .activity-grid { max-height: none; scrollbar-gutter: auto; }
+.ifto-phone .todo-list { display: flex; flex-direction: column; gap: 5px; background: var(--mobile-panel-bg); padding: 10px; min-height: 0; height: 220px; max-height: 220px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; border-radius: 0 !important; }
+.ifto-phone .activity-grid { height: 220px; min-height: 0; max-height: 220px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-gutter: auto; }
 .ifto-phone .todo-item { position: relative; height: auto; min-height: 42px; padding: 2px 30px 2px 4px; gap: 0; box-shadow: none; border-radius: 0 !important; }
+.ifto-phone .todo-list > .todo-item { flex: 0 0 auto; }
 .ifto-phone .todo-item .cb, .ifto-phone .card-sm .cb { position: relative; flex: 0 0 38px; width: 38px; height: 38px; margin: 0; border: 0; background: transparent; font-size: 12px; color: var(--g1); }
 .ifto-phone .todo-item .cb::before, .ifto-phone .card-sm .cb::before { content: ''; width: 13px; height: 13px; position: absolute; border: 1px solid var(--ifto-text-2); border-radius: 3px; pointer-events: none; }
 .ifto-phone .todo-item .cb.checked::before, .ifto-phone .card-sm .cb.checked::before { background: var(--g1); opacity: .15; }
@@ -976,12 +978,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .btn-project-new { padding: 0 9px; min-height: 36px; height: auto; font-size: 12px; border-radius: 0 !important; }
 .ifto-phone .project-cols {
   position: relative; display: flex !important; flex-direction: column !important;
-  overflow: visible !important; gap: 10px !important; padding: 0 54px 0 0; scroll-snap-type: none;
+  overflow: visible !important; gap: 10px !important; padding: 0; scroll-snap-type: none;
 }
 .ifto-phone .project-col {
   flex: 0 0 auto !important; width: 100%; min-width: 0 !important; max-width: none;
-  min-height: 144px !important; max-height: none !important; height: auto;
-  padding: 6px 9px 9px; background: var(--mobile-panel-bg); border-radius: 0 !important;
+  min-height: 200px !important; max-height: 280px !important; height: 260px;
+  padding: 6px 9px 9px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  background: var(--mobile-panel-bg); border-radius: 0 !important;
 }
 .ifto-phone .project-col-title { justify-content: center; text-align: center; padding: 2px; min-height: 28px; font-size: 12px; }
 .ifto-phone .project-col-title-toggle > span { display: inline-flex; align-items: center; min-height: 30px; }
@@ -994,9 +997,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .project-folder-card { min-width: 0; max-width: 100%; border-radius: 0 !important; }
 .ifto-phone .project-folder-header { position: relative; padding: 6px 30px 6px 5px; min-height: 38px; }
 .ifto-phone .project-folder-name { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
-.ifto-phone .project-archive-zone { position: absolute; top: 0; right: 0; bottom: 0; width: 46px; min-width: 0; padding: 0; }
-.ifto-phone .project-archive-drop { display: none; }
-.ifto-phone .mobile-archive-button { width: 100%; height: 100%; min-height: 100px; background: transparent; border: 1px dashed var(--ifto-text-2); border-radius: 0; font-size: 12px; color: var(--g1); padding: 8px; }
+.ifto-phone .project-archive-zone { display: none !important; }
+.ifto-phone .project-archive-drop, .ifto-phone .mobile-archive-button { display: none !important; }
+.ifto-phone #project > div:nth-child(2) { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px !important; }
+.ifto-phone .btn-project-new { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 38px; height: auto; padding: 8px 2px; border: 0; border-radius: 0 !important; background: transparent; box-shadow: none; font-size: 12px; white-space: nowrap; }
+.ifto-phone .btn-project-new::before, .ifto-phone .btn-project-new::after { position: absolute; left: 0; right: 0; height: 1px; content: ''; background: var(--g1); }
+.ifto-phone .btn-project-new::before { top: 3px; }
+.ifto-phone .btn-project-new::after { bottom: 3px; }
 
 /* Reading tabs replace the desktop sidebar; all cards take two equal columns. */
 .ifto-phone .note-layout { display: flex; flex-direction: column; gap: 8px; }
@@ -1043,18 +1050,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--g1)}
 .ifto-phone .mobile-dock .hero-title-sub { display: inline; font-size: 10px; letter-spacing: 0; }
 .ifto-phone .mobile-dock .shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; margin: 0 !important; }
 .ifto-phone .mobile-dock .btn-s { display: flex; flex-direction: row; gap: 6px; width: 100% !important; height: 40px !important; min-height: 40px; padding: 0 4px !important; background: var(--ifto-card-bg); border: 1px solid var(--g6); border-radius: 0 !important; box-shadow: none; }
-.ifto-phone .mobile-dock .s-label { font-size: 12px !important; letter-spacing: 0; }
-.ifto-phone .mobile-dock .s-icon { font-size: 18px !important; font-weight: 300; }
+.ifto-phone .mobile-dock .s-label { font-size: 15px !important; letter-spacing: 0; }
+.ifto-phone .mobile-dock .s-icon { font-size: 20px !important; font-weight: 300; }
 .ifto-phone .mobile-signature { margin-top: 3px; color: var(--g4); font-size: 10px; font-weight: 300; text-align: center; line-height: 16px; }
 .ifto-phone.mobile-keyboard .mobile-dock { display: none; }
 .ifto-phone .mobile-more { position: absolute; top: 0; right: 0; width: 32px; height: 32px; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--ifto-text-2); font-size: 20px; z-index: 2; }
 .ifto-phone .mobile-empty { grid-column: 1 / -1; align-self: center; text-align: center; padding: 24px 8px; color: var(--ifto-text-2); font-size: 12px; }
-.ifto-phone .inbox-list-item { position: relative; padding-right: 32px; }
-.ifto-phone .organize-layout { flex-direction: column; gap: 12px; }
-.ifto-phone .organize-sidebar { width: 100%; max-width: none; min-width: 0; }
-.ifto-phone .organize-sidebar .side-drop-area { display: none; }
-.ifto-phone .side-folder-item { min-height: 36px; }
-.ifto-phone .side-folder-item[data-file="true"] { position: relative; padding-right: 32px !important; }
 .ifto-phone #area .dt-pin { opacity: 1; width: 28px; height: 28px; }
 .ifto-phone .mobile-sheet-overlay { position: absolute; inset: 0; z-index: 1000; display: flex; align-items: flex-end; background: #0006; }
 .ifto-phone .mobile-sheet { width: 100%; max-height: 85%; overflow-y: auto; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); background: var(--ifto-card-bg); color: var(--g1); box-shadow: 0 -4px 24px #0002; }
@@ -6669,6 +6670,8 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
   var notePages = { reading: 1, read: 1, paper: 1 };
   var sheet = null, sheetTrigger = null;
   var viewportBase = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var organizeTab = root.querySelector('#inbox .tab[data-tab="organize"]');
+  if (organizeTab) organizeTab.remove();
   function on(el, event, handler, options) {
     el.addEventListener(event, handler, Object.assign({}, options, { signal: signal }));
   }
@@ -6758,14 +6761,16 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     }
   }, { capture: true });
 
-  // Axis locking lets vertical scrolling and host edge gestures take precedence.
+  // Reserve broad edge zones for Obsidian's sidebar gestures. Inside the
+  // center lane, require a deliberate horizontal swipe before changing pages.
   var excluded = 'input,textarea,select,button,a,[contenteditable="true"],.tabs,.note-sidebar,.slide-nav,.hero-nav-row,.mobile-note-nav,.dt-visual,.dt-zoom-ctrl,.mobile-sheet-overlay';
   on(rail, 'touchstart', function(e) {
     gesture = null;
     if (sheet || e.touches.length !== 1 || e.target.closest(excluded)) return;
     if (document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
     var t = e.touches[0], bounds = root.getBoundingClientRect();
-    if (t.clientX - bounds.left < 24 || bounds.right - t.clientX < 24) return;
+    var edgeReserve = Math.min(64, Math.max(48, bounds.width * 0.16));
+    if (t.clientX - bounds.left < edgeReserve || bounds.right - t.clientX < edgeReserve) return;
     gesture = { x: t.clientX, y: t.clientY, lastX: t.clientX, start: Date.now(), axis: '' };
   }, { passive: true });
   on(rail, 'touchmove', function(e) {
@@ -6774,7 +6779,10 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     var t = e.touches[0], dx = t.clientX - gesture.x, dy = t.clientY - gesture.y;
     gesture.lastX = t.clientX;
     if (!gesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) gesture.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
-    if (gesture.axis === 'x' && e.cancelable) e.preventDefault();
+    if (gesture.axis === 'x') {
+      if (e.cancelable) e.preventDefault();
+      e.stopPropagation();
+    }
   }, { passive: false });
   on(rail, 'touchend', function(e) {
     if (!gesture) return;
@@ -6782,7 +6790,7 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
     var t = e.changedTouches[0];
     var dx = t ? t.clientX - g.x : g.lastX - g.x;
     var dy = t ? t.clientY - g.y : 0;
-    if (g.axis !== 'y' && Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - g.start < 1000) {
+    if (g.axis === 'x' && Math.abs(dx) >= 80 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - g.start < 900) {
       suppressClickUntil = Date.now() + 350;
       var next = ids.indexOf(current) + (dx < 0 ? 1 : -1);
       if (next >= 0 && next < ids.length) navigate(ids[next]);
@@ -6955,10 +6963,21 @@ document.querySelector('.ifto-container')?.addEventListener('contextmenu', funct
         if (target && target.ondrop) target.ondrop(dropEvent(path, source));
       } });
     } else if (!isFolder && card.closest('#inbox,#todo')) {
-      [ ['\u6536\u96C6', getInboxFolder()], ['\u4ECA\u65E5\u5F85\u529E', TODO_FOLDER], ['\u6D3B\u52A8\u6E05\u5355', ACTIVITY_FOLDER], ['\u5FEB\u901F\u5B66\u4E60', getQuickLearnFolder()] ].forEach(function(dest) {
+      var inboxCard = !!card.closest('#inbox');
+      var destinations = inboxCard ? [
+        ['\u8D44\u6E90\u6587\u4EF6\u76EE\u5F55', getResourceRoot()],
+        ['\u9879\u76EE\u7BA1\u7406\u76EE\u5F55', getProjectBase()],
+        ['\u5FEB\u901F\u5B66\u4E60', getQuickLearnFolder()],
+        ['\u4ECA\u65E5\u5F85\u529E', TODO_FOLDER],
+        ['\u6D3B\u52A8\u6E05\u5355', ACTIVITY_FOLDER]
+      ] : [
+        ['\u6536\u96C6', getInboxFolder()], ['\u4ECA\u65E5\u5F85\u529E', TODO_FOLDER],
+        ['\u6D3B\u52A8\u6E05\u5355', ACTIVITY_FOLDER], ['\u5FEB\u901F\u5B66\u4E60', getQuickLearnFolder()]
+      ];
+      destinations.forEach(function(dest) {
         if (path.substring(0, path.lastIndexOf('/')) !== dest[1]) items.push({ label: '\u79FB\u81F3' + dest[0], action: function() { return move(path, dest[1]); } });
       });
-      items.push({ label: '\u9009\u62E9\u76EE\u6807\u6587\u4EF6\u5939\u2026', action: function() {
+      if (!inboxCard) items.push({ label: '\u9009\u62E9\u76EE\u6807\u6587\u4EF6\u5939\u2026', action: function() {
         openSheet('\u9009\u62E9\u5206\u7C7B\u4F4D\u7F6E', [getResourceRoot(), getProjectBase(), getNoteFolder()].map(function(folder) {
           return { label: folder, action: function() { pickFolder(path, folder); } };
         }));

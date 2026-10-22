@@ -17,6 +17,11 @@ async (page) => {
   assert(await page.locator('.mobile-panel').count() === 7, 'Seven phone pages');
   assert(await page.locator('.mobile-dock .btn-s').count() === 4, 'Four shared creation buttons');
   assert(await page.locator('#s-collect').count() === 1, 'No duplicated shortcut IDs');
+  assert(await page.locator('#inbox [data-tab="organize"]').count() === 0, 'Phone inbox omits the drag-based organize tab');
+  const topInset = await page.locator('.header .nav-items').evaluate(el => el.getBoundingClientRect().top);
+  assert(topInset >= 52, 'Phone navigation clears the status area');
+  const phoneLogoRight = await page.locator('#home .mobile-brand-mark').evaluate(el => el.getBoundingClientRect().right);
+  assert(Math.abs(phoneLogoRight - 375) < 1, 'Phone brand mark sits flush with the viewport edge');
   const homeGeometry = await page.evaluate(() => ({
     title: document.querySelector('.hero-brand').getBoundingClientRect().bottom,
     widget: document.querySelector('.widget-card').getBoundingClientRect().top,
@@ -47,13 +52,13 @@ async (page) => {
   await page.locator('#inbox [data-tab="learn"]').click();
   await settle();
   assert(await page.locator('#inboxGrid > .card-detail').count() === 8, 'Quick learning uses two-column phone pagination');
-  await page.locator('#inbox [data-tab="organize"]').click(); await settle();
-  assert(await page.evaluate(() => document.querySelector('#inbox').scrollWidth <= document.querySelector('#inbox').clientWidth + 1), 'Organize sidebar fits phone width');
-  await page.locator('.side-folder-item[data-folder="Resources/参考资料"]').click();
-  await page.locator('.side-folder-item[data-folder="Resources/参考资料/参考笔记.md"] .mobile-more').click();
-  await page.getByRole('button', {name:'移至收集',exact:true}).click(); await settle();
-  assert(await page.evaluate(() => __fixture.files.has('Inbox/参考笔记.md') && !__fixture.files.has('Resources/参考资料/参考笔记.md')), 'Organize resource files can move back to inbox using touch menu');
   await page.locator('#inbox [data-tab="collect"]').click();
+  await page.locator('#inboxGrid .card-detail .mobile-more').first().click();
+  for (const name of ['资源文件目录','项目管理目录','快速学习','今日待办','活动清单']) {
+    assert(await page.getByRole('button', {name:'移至' + name, exact:true}).count() === 1, 'Inbox card can move directly to ' + name);
+  }
+  await page.getByRole('button', {name:'移至资源文件目录',exact:true}).click(); await settle();
+  assert(await page.evaluate(() => Array.from(__fixture.files.keys()).some(p => p.startsWith('Resources/') && p.includes('收集文件 1'))), 'Inbox card moves to the resource root from its action menu');
 
   await go('note'); await settle();
   assert(await page.locator('#noteGrid > :is(.note-card,.note-add-btn):not([hidden])').count() === 8, 'Reading add card occupies one of eight slots');
@@ -73,6 +78,22 @@ async (page) => {
 
   await go('todo');
   assert(await page.evaluate(() => document.getElementById('todoList').getBoundingClientRect().left === document.getElementById('activityGrid').getBoundingClientRect().left), 'Todo and activity sections share the same phone alignment');
+  await page.evaluate(async () => {
+    for (let i=0;i<14;i++) {
+      __fixture.files.set('Todos/溢出待办 ' + i + '.md',{fm:{},ctime:Date.now()-i,checked:false});
+      __fixture.files.set('Activities/溢出活动 ' + i + '.md',{fm:{},ctime:Date.now()-i,checked:false});
+      __fixture.files.set('Projects/溢出项目 ' + i + '.md',{fm:{status:'未开始'},ctime:Date.now()-i,checked:false});
+    }
+    await renderTodo(); await renderActivity(); await renderProject();
+  }); await settle();
+  assert(await page.locator('#todoList').evaluate(el => el.clientHeight === 220 && el.scrollHeight > el.clientHeight), 'Today todo list keeps a fixed height and scrolls internally');
+  assert(await page.locator('#activityGrid').evaluate(el => el.clientHeight === 220 && el.scrollHeight > el.clientHeight), 'Activity list keeps a fixed height and scrolls internally');
+  await go('project'); await settle();
+  const projectScroll = await page.locator('.project-col[data-status="未开始"]').evaluate(el => ({height:el.clientHeight,scroll:el.scrollHeight,children:el.children.length,overflow:getComputedStyle(el).overflowY}));
+  assert(projectScroll.height === 260 && projectScroll.scroll > projectScroll.height, 'Project status column keeps a fixed height and scrolls internally ' + JSON.stringify(projectScroll));
+  assert(await page.locator('#projectArchiveZone').evaluate(el => getComputedStyle(el).display === 'none'), 'Phone project view hides the dashed archive rail');
+  assert(await page.locator('#project .btn-project-new').first().evaluate(el => getComputedStyle(el).borderTopWidth === '0px' && getComputedStyle(el, '::before').content !== 'none'), 'Project creation uses compact line-style buttons');
+  await go('todo');
   const cb = page.locator('#todoList .cb').first();
   const openedBefore = await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'open').length);
   await cb.click(); await settle();
@@ -141,6 +162,14 @@ async (page) => {
   assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'Right swipe goes to previous page');
   await swipe(100, 120, 280, 120);
   assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'First page does not wrap');
+  var reservedProbe = String(Date.now());
+  await page.evaluate(probe => { document.querySelector('.ifto-phone').dataset.reservedProbe = probe; }, reservedProbe);
+  try { await swipe(52, 180, 220, 180); } catch (_) { /* host may handle the reserved edge swipe */ }
+  var reservedEdgeChangedPluginPage = false;
+  try { reservedEdgeChangedPluginPage = await page.evaluate(probe => { var root = document.querySelector('.ifto-phone'); return root && root.dataset.reservedProbe === probe && root.dataset.mobilePage !== 'home'; }, reservedProbe); } catch (_) { /* host navigation replaced the document */ }
+  assert(!reservedEdgeChangedPluginPage, 'Reserved edge gesture does not also change the plugin page');
+  await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock');
+  await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage = 'home');
   await swipe(180, 240, 184, 100);
   assert(await page.evaluate(() => document.querySelector('.ifto-phone').dataset.mobilePage === 'home'), 'Vertical gesture does not navigate');
   var edgeProbe = String(Date.now());
@@ -156,12 +185,15 @@ async (page) => {
   await page.goto('http://127.0.0.1:8765/?phone=1'); await page.waitForSelector('.mobile-dock');
   for (const id of ['s-collect','s-todo','s-task','s-note']) await page.locator('#' + id).click();
   assert(await page.evaluate(() => __fixture.calls.filter(c => c[0] === 'create').length === 4), 'All four dock buttons retain creation handlers');
+  assert(await page.locator('#s-collect .s-label').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 15), 'Phone shortcut labels use readable type size');
+  assert(await page.locator('.mobile-brand-mark').first().evaluate(el => parseFloat(getComputedStyle(el).width) >= 90), 'Phone brand mark is enlarged');
 
   for (const size of [{width:320,height:568},{width:430,height:932},{width:813,height:375}]) {
     await page.setViewportSize(size);
     for (const id of ['home','inbox','todo','project','area','note','review']) {
       await go(id); await settle();
       assert(await page.evaluate(id => { const el = document.getElementById(id), dock = document.querySelector('.mobile-dock'); return el.scrollWidth <= el.clientWidth + 1 && dock.getBoundingClientRect().bottom <= innerHeight + 1; }, id), id + ' fits ' + size.width + '×' + size.height);
+      assert(await page.evaluate(id => Array.from(document.querySelectorAll('#' + id + ' .card-detail,#' + id + ' .card-sm,#' + id + ' .note-card,#' + id + ' .project-card,#' + id + ' .project-file-item')).every(card => card.getBoundingClientRect().width <= card.parentElement.getBoundingClientRect().width + 1), id), id + ' cards stay within their panels');
     }
   }
   await page.setViewportSize({width:375,height:813});
